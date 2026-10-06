@@ -143,4 +143,22 @@ public partial class LoginViewModel : ViewModelBase
         string pass = $"{words[random.Next(words.Length)]}-{words[random.Next(words.Length)]}-{words[random.Next(words.Length)]}-{words[random.Next(words.Length)]}{random.Next(10, 99)}!";
         MasterPassword = pass;
     }
+
+    [RelayCommand]
+    private void SignOut()
+    {
+        // Clear cached auth tokens
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string credentialsPath = Path.Combine(appData, "Vaulture", "Google.Apis.Auth");
+        if (Directory.Exists(credentialsPath))
+        {
+            Directory.Delete(credentialsPath, true);
+        }
+
+        // Reset state
+        IsGoogleAuthenticated = false;
+        UserEmail = null;
+        UserName = null;
+        UserAvatar = null;
+    }
 }

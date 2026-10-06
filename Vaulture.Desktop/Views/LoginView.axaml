@@ -91,13 +91,12 @@
                     <TextBlock IsVisible="{Binding IsFirstTimeSetup}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                Text="Your Master Password is the only key to your vault. It encrypts all your data locally on your device. We cannot recover it for you if you lose it, so make sure it is strong and memorable!" />
                     
-                    <Grid ColumnDefinitions="*, Auto" IsVisible="{Binding IsFirstTimeSetup}">
-                        <TextBlock Grid.Column="0" Text="Master Password" VerticalAlignment="Center" />
-                        <Button Grid.Column="1" Command="{Binding GenerateMasterPasswordCommand}" Content="✨ Generate Password" Background="Transparent" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Cursor="Hand" Padding="5,0" />
-                    </Grid>
-                    <TextBlock Text="Master Password" IsVisible="{Binding IsNotFirstTimeSetup}" />
+                    <TextBlock Text="Master Password" />
                     
-                    <TextBox Text="{Binding MasterPassword}" PasswordChar="•" PlaceholderText="Enter your master password" Classes="revealPasswordButton" />
+                    <Grid ColumnDefinitions="*, Auto">
+                        <TextBox Grid.Column="0" Text="{Binding MasterPassword}" PasswordChar="•" PlaceholderText="Enter your master password" Classes="revealPasswordButton" />
+                        <Button Grid.Column="1" Command="{Binding GenerateMasterPasswordCommand}" Content="Generate Password" Cursor="Hand" Margin="10,0,0,0" IsVisible="{Binding IsFirstTimeSetup}" />
+                    </Grid>
                     
                     <Button Content="Create Vault" Command="{Binding LoginCommand}" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" IsVisible="{Binding IsFirstTimeSetup}" />
                     <Button Content="Unlock Vault" Command="{Binding LoginCommand}" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" IsVisible="{Binding IsNotFirstTimeSetup}" />
@@ -106,8 +105,8 @@
             </StackPanel>
         </StackPanel>
         
-        <!-- Logged In Profile Badge -->
-        <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="20" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="20" Padding="10,5" IsVisible="{Binding IsGoogleAuthenticated}">
+        <!-- Logged In Profile Badge (Click to Sign Out) -->
+        <Button Command="{Binding SignOutCommand}" Cursor="Hand" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="20" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="20" Padding="10,5" IsVisible="{Binding IsGoogleAuthenticated}" ToolTip.Tip="Click to sign out of Google">
             <StackPanel Orientation="Horizontal" Spacing="10">
                 <Border CornerRadius="15" Width="30" Height="30" ClipToBounds="True">
                     <Image Source="{Binding UserAvatar}" Stretch="UniformToFill" />
@@ -116,7 +115,8 @@
                     <TextBlock Text="{Binding UserName}" FontWeight="SemiBold" FontSize="12" />
                     <TextBlock Text="{Binding UserEmail}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
+                <TextBlock Text="🚪" FontSize="16" VerticalAlignment="Center" Margin="5,0,0,0" />
             </StackPanel>
-        </Border>
+        </Button>
     </Grid>
 </UserControl>
