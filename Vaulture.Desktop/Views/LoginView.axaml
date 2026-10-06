@@ -56,7 +56,11 @@
             </Image>
 
             <StackPanel Classes="form" Spacing="20">
-                <TextBlock Text="Vaulture" FontSize="48" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,20" />
+                <TextBlock Text="Vaulture" FontSize="48" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,5" />
+                
+                <Border Background="{DynamicResource AccentFillColorDefaultBrush}" CornerRadius="10" Padding="10,5" HorizontalAlignment="Center" IsVisible="{Binding IsFirstTimeSetup}" Margin="0,0,0,15">
+                    <TextBlock Text="✨ First Time Setup" FontWeight="Bold" Foreground="White" FontSize="12" />
+                </Border>
                 
                 <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 
@@ -71,7 +75,7 @@
                         <TextBlock Text="We highly recommend linking your Google Drive. Since your vault is completely offline and encrypted, linking your drive automatically syncs your encrypted database so you can recover your passwords if you lose this device." 
                                    TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                    
-                        <Button Command="{Binding SignInWithGoogleCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                        <Button Command="{Binding SignInWithGoogleCommand}" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                             <Grid ColumnDefinitions="Auto, *">
                                 <Image Grid.Column="0" Source="avares://Vaulture.Desktop/Assets/google.png" Width="16" Height="16" Margin="0,0,10,0" />
                                 <TextBlock Grid.Column="1" Text="Sign in with Google Drive" HorizontalAlignment="Center" />
@@ -84,13 +88,15 @@
                 <StackPanel Spacing="20" IsVisible="{Binding IsGoogleAuthenticated}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
                         <TextBlock Text="🔐" />
-                        <TextBlock Text="Step 2: Unlock Local Vault" FontWeight="SemiBold" />
+                        <TextBlock Text="Step 2: Create Master Password" FontWeight="SemiBold" IsVisible="{Binding IsFirstTimeSetup}" />
+                        <TextBlock Text="Step 2: Unlock Local Vault" FontWeight="SemiBold" IsVisible="{Binding IsNotFirstTimeSetup}" />
                     </StackPanel>
                     
                     <TextBlock Text="Master Password" />
                     <TextBox Text="{Binding MasterPassword}" PasswordChar="•" PlaceholderText="Enter your master password" Classes="revealPasswordButton" />
                     
-                    <Button Content="Unlock Vault" Command="{Binding LoginCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" />
+                    <Button Content="Create Vault" Command="{Binding LoginCommand}" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" IsVisible="{Binding IsFirstTimeSetup}" />
+                    <Button Content="Unlock Vault" Command="{Binding LoginCommand}" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" IsVisible="{Binding IsNotFirstTimeSetup}" />
                 </StackPanel>
                 
             </StackPanel>

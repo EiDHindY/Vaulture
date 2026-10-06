@@ -33,9 +33,20 @@ public partial class LoginViewModel : ViewModelBase
 
     public bool IsNotGoogleAuthenticated => !IsGoogleAuthenticated;
 
+    [ObservableProperty]
+    public partial bool IsFirstTimeSetup { get; set; } = false;
+
+    [ObservableProperty]
+    public partial bool IsNotFirstTimeSetup { get; set; } = true;
+
     public LoginViewModel(MainViewModel mainViewModel)
     {
         _mainViewModel = mainViewModel;
+        
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string dbPath = Path.Combine(appData, "Vaulture", "vault.db");
+        IsFirstTimeSetup = !File.Exists(dbPath);
+        IsNotFirstTimeSetup = !IsFirstTimeSetup;
     }
 
     [RelayCommand]
