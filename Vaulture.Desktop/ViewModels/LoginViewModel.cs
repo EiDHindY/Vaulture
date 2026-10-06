@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Vaulture.Core.Data;
 using Vaulture.Core.Services;
 
@@ -57,6 +58,38 @@ public partial class LoginViewModel : ViewModelBase
         catch (Exception ex)
         {
             ErrorMessage = "Failed to unlock vault. Incorrect password or corrupted database.";
+        }
+    }
+
+    [RelayCommand]
+    private async Task LinkGoogleDrive()
+    {
+        ErrorMessage = "";
+        
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string vaultDir = Path.Combine(appData, "Vaulture");
+        if (!Directory.Exists(vaultDir)) Directory.CreateDirectory(vaultDir);
+
+        string secretsPath = Path.Combine(vaultDir, "client_secrets.json");
+        string credentialsPath = Path.Combine(vaultDir, "Google.Apis.Auth");
+
+        if (!File.Exists(secretsPath))
+        {
+            ErrorMessage = "To enable Google Drive, please place your 'client_secrets.json' file in: " + vaultDir;
+            return;
+        }
+
+        var driveService = new GoogleDriveSyncService();
+        bool success = await driveService.AuthenticateAsync(secretsPath, credentialsPath);
+
+        if (success)
+        {
+            ErrorMessage = "Google Drive successfully linked! Future backups will be synced.";
+            // We can persist this state so the Dashboard knows auto-sync is enabled.
+        }
+        else
+        {
+            ErrorMessage = "Google Drive authentication failed.";
         }
     }
 }

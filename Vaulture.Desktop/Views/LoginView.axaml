@@ -61,11 +61,29 @@
                 <TextBlock Text="Master Password" />
             <TextBox Text="{Binding MasterPassword}" PasswordChar="•" Watermark="Enter your master password" Classes="revealPasswordButton" />
             
-            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             
             <Button Content="Unlock Vault" Command="{Binding LoginCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" />
             
-            <Button Content="Import Backup..." HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,10,0,0" />
+            <!-- Google Drive Optional Backup Section -->
+            <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8" Padding="15" Margin="0,10,0,0">
+                <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <TextBlock Text="☁️" />
+                        <TextBlock Text="Cloud Backup (Optional)" FontWeight="SemiBold" />
+                    </StackPanel>
+                    
+                    <TextBlock Text="We highly recommend linking your Google Drive. Since your vault is completely offline and encrypted, linking your drive automatically syncs your encrypted database so you can recover your passwords if you lose this device." 
+                               TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                               
+                    <Button Command="{Binding LinkGoogleDriveCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                        <Grid ColumnDefinitions="Auto, *">
+                            <Image Grid.Column="0" Source="avares://Vaulture.Desktop/Assets/google.png" Width="16" Height="16" Margin="0,0,10,0" />
+                            <TextBlock Grid.Column="1" Text="Sign in with Google Drive" HorizontalAlignment="Center" />
+                        </Grid>
+                    </Button>
+                </StackPanel>
+            </Border>
             </StackPanel>
         </StackPanel>
     </Grid>
