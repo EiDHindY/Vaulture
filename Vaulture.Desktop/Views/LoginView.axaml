@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Vaulture.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1024" d:DesignHeight="768"
+             x:Class="Vaulture.Desktop.Views.LoginView"
+             x:DataType="vm:LoginViewModel">
+    
+    <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="400" Spacing="20">
+            <TextBlock Text="Vaulture" FontSize="48" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,20" />
+            
+            <TextBlock Text="Master Password" />
+            <TextBox Text="{Binding MasterPassword}" PasswordChar="•" Watermark="Enter your master password" Classes="revealPasswordButton" />
+            
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            
+            <Button Content="Unlock Vault" Command="{Binding LoginCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" />
+            
+            <Button Content="Import Backup..." HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,10,0,0" />
+        </StackPanel>
+    </Grid>
+</UserControl>
