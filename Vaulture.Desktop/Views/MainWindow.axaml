@@ -7,7 +7,7 @@
         mc:Ignorable="d" d:DesignWidth="1024" d:DesignHeight="768"
         x:Class="Vaulture.Desktop.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/vaulture-logo.ico"
         Title="Vaulture"
         WindowStartupLocation="CenterScreen"
         Width="1024" Height="768">
