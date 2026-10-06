@@ -132,4 +132,15 @@ public partial class LoginViewModel : ViewModelBase
             ErrorMessage = "Failed to unlock vault. Incorrect password or corrupted database.";
         }
     }
+
+    [RelayCommand]
+    private void GenerateMasterPassword()
+    {
+        // Generate a strong, memorable 4-word passphrase with a number and symbol
+        string[] words = { "Cyber", "Neon", "Quantum", "Cipher", "Vault", "Echo", "Flux", "Nova", "Pulse", "Apex", "Matrix", "Zenith", "Onyx", "Rogue", "Ghost" };
+        var random = new Random();
+        
+        string pass = $"{words[random.Next(words.Length)]}-{words[random.Next(words.Length)]}-{words[random.Next(words.Length)]}-{words[random.Next(words.Length)]}{random.Next(10, 99)}!";
+        MasterPassword = pass;
+    }
 }
