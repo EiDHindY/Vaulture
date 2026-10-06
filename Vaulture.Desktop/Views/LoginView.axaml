@@ -91,14 +91,13 @@
                     <TextBlock IsVisible="{Binding IsFirstTimeSetup}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                Text="Your Master Password is the only key to your vault. It encrypts all your data locally on your device. We cannot recover it for you if you lose it, so make sure it is strong and memorable!" />
                     
-                    <TextBlock Text="Master Password" />
-                    <TextBox Text="{Binding MasterPassword}" PasswordChar="•" PlaceholderText="Enter your master password" Classes="revealPasswordButton">
-                        <TextBox.InnerRightContent>
-                            <Button Command="{Binding GenerateMasterPasswordCommand}" Cursor="Hand" Background="Transparent" BorderThickness="0" Padding="5,0" Margin="0,0,5,0" ToolTip.Tip="Generate strong passphrase" IsVisible="{Binding IsFirstTimeSetup}">
-                                <TextBlock Text="🪄" FontSize="14" />
-                            </Button>
-                        </TextBox.InnerRightContent>
-                    </TextBox>
+                    <Grid ColumnDefinitions="*, Auto" IsVisible="{Binding IsFirstTimeSetup}">
+                        <TextBlock Grid.Column="0" Text="Master Password" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Command="{Binding GenerateMasterPasswordCommand}" Content="✨ Generate Password" Background="Transparent" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Cursor="Hand" Padding="5,0" />
+                    </Grid>
+                    <TextBlock Text="Master Password" IsVisible="{Binding IsNotFirstTimeSetup}" />
+                    
+                    <TextBox Text="{Binding MasterPassword}" PasswordChar="•" PlaceholderText="Enter your master password" Classes="revealPasswordButton" />
                     
                     <Button Content="Create Vault" Command="{Binding LoginCommand}" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" IsVisible="{Binding IsFirstTimeSetup}" />
                     <Button Content="Unlock Vault" Command="{Binding LoginCommand}" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" IsVisible="{Binding IsNotFirstTimeSetup}" />
