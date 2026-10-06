@@ -123,7 +123,6 @@
                     <TextBlock Text="{Binding UserName}" FontWeight="SemiBold" FontSize="12" />
                     <TextBlock Text="{Binding UserEmail}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
-                <TextBlock Text="🚪" FontSize="16" VerticalAlignment="Center" Margin="5,0,0,0" />
             </StackPanel>
         </Button>
     </Grid>
