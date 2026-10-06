@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Vaulture.Core/Vaulture.Core.csproj" />
+  <Project Path="Vaulture.Desktop/Vaulture.Desktop.csproj" />
+</Solution>
