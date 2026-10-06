@@ -106,7 +106,15 @@
         </StackPanel>
         
         <!-- Logged In Profile Badge (Click to Sign Out) -->
-        <Button Command="{Binding SignOutCommand}" Cursor="Hand" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="20" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="20" Padding="10,5" IsVisible="{Binding IsGoogleAuthenticated}" ToolTip.Tip="Click to sign out of Google">
+        <Button Cursor="Hand" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="20" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="20" Padding="10,5" IsVisible="{Binding IsGoogleAuthenticated}" ToolTip.Tip="Click to sign out of Google">
+            <Button.Flyout>
+                <Flyout Placement="TopEdgeAlignedRight">
+                    <StackPanel Spacing="10" MinWidth="150">
+                        <TextBlock Text="Sign out of Google?" FontWeight="SemiBold" />
+                        <Button Content="Sign Out" Command="{Binding SignOutCommand}" Classes="accent" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                    </StackPanel>
+                </Flyout>
+            </Button.Flyout>
             <StackPanel Orientation="Horizontal" Spacing="10">
                 <Border CornerRadius="15" Width="30" Height="30" ClipToBounds="True">
                     <Image Source="{Binding UserAvatar}" Stretch="UniformToFill" />
