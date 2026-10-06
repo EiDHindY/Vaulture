@@ -58,10 +58,6 @@
             <StackPanel Classes="form" Spacing="20">
                 <TextBlock Text="Vaulture" FontSize="48" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,5" />
                 
-                <Border Background="{DynamicResource AccentFillColorDefaultBrush}" CornerRadius="10" Padding="10,5" HorizontalAlignment="Center" IsVisible="{Binding IsFirstTimeSetup}" Margin="0,0,0,15">
-                    <TextBlock Text="✨ First Time Setup" FontWeight="Bold" Foreground="White" FontSize="12" />
-                </Border>
-                
                 <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 
                 <!-- STEP 1: Google Drive Auth -->
