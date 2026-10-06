@@ -18,13 +18,82 @@ public partial class LoginViewModel : ViewModelBase
     [ObservableProperty]
     public partial string ErrorMessage { get; set; } = string.Empty;
 
+    [ObservableProperty]
+    public partial string? UserEmail { get; set; }
+
+    [ObservableProperty]
+    public partial string? UserName { get; set; }
+
+    [ObservableProperty]
+    public partial Avalonia.Media.Imaging.Bitmap? UserAvatar { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotGoogleAuthenticated))]
+    public partial bool IsGoogleAuthenticated { get; set; } = false;
+
+    public bool IsNotGoogleAuthenticated => !IsGoogleAuthenticated;
+
     public LoginViewModel(MainViewModel mainViewModel)
     {
         _mainViewModel = mainViewModel;
     }
 
     [RelayCommand]
-    private async Task Login()
+    private async Task SignInWithGoogle()
+    {
+        ErrorMessage = "";
+        
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string vaultDir = Path.Combine(appData, "Vaulture");
+        if (!Directory.Exists(vaultDir)) Directory.CreateDirectory(vaultDir);
+
+        string secretsPath = Path.Combine(vaultDir, "client_secrets.json");
+        string credentialsPath = Path.Combine(vaultDir, "Google.Apis.Auth");
+
+        if (!File.Exists(secretsPath))
+        {
+            ErrorMessage = "Mandatory: Please place 'client_secrets.json' in " + vaultDir + " to enable Google Drive Backup.";
+            return;
+        }
+
+        try
+        {
+            var driveService = new GoogleDriveSyncService();
+            bool success = await driveService.AuthenticateAsync(secretsPath, credentialsPath);
+
+            if (success)
+            {
+                UserEmail = driveService.LoggedInEmail;
+                UserName = driveService.LoggedInName;
+                
+                if (!string.IsNullOrEmpty(driveService.LoggedInAvatarUrl))
+                {
+                    try
+                    {
+                        using var httpClient = new System.Net.Http.HttpClient();
+                        var imageBytes = await httpClient.GetByteArrayAsync(driveService.LoggedInAvatarUrl);
+                        using var ms = new MemoryStream(imageBytes);
+                        UserAvatar = new Avalonia.Media.Imaging.Bitmap(ms);
+                    }
+                    catch { /* ignore */ }
+                }
+                
+                IsGoogleAuthenticated = true;
+                ErrorMessage = "";
+            }
+            else
+            {
+                ErrorMessage = "Google Drive authentication failed. This is required to access your vault.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Authentication error: " + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void Login()
     {
         ErrorMessage = "";
         
@@ -36,39 +105,15 @@ public partial class LoginViewModel : ViewModelBase
 
         try
         {
-            // 1. Derive Key
             string key = EncryptionService.DeriveKeyFromPassword(MasterPassword);
 
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string vaultDir = Path.Combine(appData, "Vaulture");
-            if (!Directory.Exists(vaultDir)) Directory.CreateDirectory(vaultDir);
-            
             string dbPath = Path.Combine(vaultDir, "vault.db");
-            string secretsPath = Path.Combine(vaultDir, "client_secrets.json");
-            string credentialsPath = Path.Combine(vaultDir, "Google.Apis.Auth");
 
-            if (!File.Exists(secretsPath))
-            {
-                ErrorMessage = "Mandatory: Please place 'client_secrets.json' in " + vaultDir + " to enable Google Drive Backup.";
-                return;
-            }
-
-            // 2. Initialize DbContext (Local Unlock)
             var dbContext = new VaultDbContext(dbPath, key);
             dbContext.Database.EnsureCreated();
 
-            // 3. Mandatory Google Drive Authentication
-            var driveService = new GoogleDriveSyncService();
-            bool googleAuthSuccess = await driveService.AuthenticateAsync(secretsPath, credentialsPath);
-
-            if (!googleAuthSuccess)
-            {
-                ErrorMessage = "Google Drive authentication failed. This is required to access your vault.";
-                dbContext.Dispose();
-                return;
-            }
-
-            // 4. Navigate to Dashboard, passing the valid context
             _mainViewModel.NavigateTo(new DashboardViewModel(_mainViewModel, dbContext));
         }
         catch (Exception)
@@ -76,5 +121,4 @@ public partial class LoginViewModel : ViewModelBase
             ErrorMessage = "Failed to unlock vault. Incorrect password or corrupted database.";
         }
     }
-
 }

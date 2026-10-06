@@ -6,21 +6,26 @@ using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Drive.v3;
 using Google.Apis.Services;
+using Google.Apis.Oauth2.v2;
 using Google.Apis.Util.Store;
 
 namespace Vaulture.Core.Services;
 
 public class GoogleDriveSyncService
 {
-    private static readonly string[] Scopes = { DriveService.Scope.DriveFile };
+    private static readonly string[] Scopes = { DriveService.Scope.DriveFile, Oauth2Service.Scope.UserinfoProfile, Oauth2Service.Scope.UserinfoEmail };
     private const string ApplicationName = "Vaulture Password Manager";
     private const string BackupFolderName = "Vaulture Backups";
     
     private DriveService? _driveService;
+    private Oauth2Service? _oauthService;
+
+    public string? LoggedInEmail { get; private set; }
+    public string? LoggedInName { get; private set; }
+    public string? LoggedInAvatarUrl { get; private set; }
 
     /// <summary>
     /// Authenticates the user and initializes the DriveService.
-    /// Requires a client_secrets.json file embedded or placed next to the executable.
     /// </summary>
     public async Task<bool> AuthenticateAsync(string clientSecretsPath, string credentialsStorePath)
     {
@@ -41,6 +46,25 @@ public class GoogleDriveSyncService
             HttpClientInitializer = credential,
             ApplicationName = ApplicationName,
         });
+        
+        _oauthService = new Oauth2Service(new BaseClientService.Initializer()
+        {
+            HttpClientInitializer = credential,
+            ApplicationName = ApplicationName,
+        });
+
+        // Fetch User Info
+        try
+        {
+            var userInfo = await _oauthService.Userinfo.Get().ExecuteAsync();
+            LoggedInEmail = userInfo.Email;
+            LoggedInName = userInfo.Name;
+            LoggedInAvatarUrl = userInfo.Picture;
+        }
+        catch
+        {
+            // Ignore if profile fetch fails
+        }
 
         return true;
     }

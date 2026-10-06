@@ -58,18 +58,55 @@
             <StackPanel Classes="form" Spacing="20">
                 <TextBlock Text="Vaulture" FontSize="48" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,20" />
                 
-                <TextBlock Text="Master Password" />
-            <TextBox Text="{Binding MasterPassword}" PasswordChar="•" Watermark="Enter your master password" Classes="revealPasswordButton" />
-            
-            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-            
-            <Button Command="{Binding LoginCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Classes="accent" Margin="0,10,0,0">
-                <Grid ColumnDefinitions="Auto, *">
-                    <Image Grid.Column="0" Source="avares://Vaulture.Desktop/Assets/google.png" Width="16" Height="16" Margin="0,0,10,0" />
-                    <TextBlock Grid.Column="1" Text="Unlock Vault &amp; Sync to Google Drive" HorizontalAlignment="Center" />
-                </Grid>
-            </Button>
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                
+                <!-- STEP 1: Google Drive Auth -->
+                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8" Padding="15" IsVisible="{Binding IsNotGoogleAuthenticated}">
+                    <StackPanel Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="☁️" />
+                            <TextBlock Text="Step 1: Link Cloud Backup" FontWeight="SemiBold" />
+                        </StackPanel>
+                        
+                        <TextBlock Text="We highly recommend linking your Google Drive. Since your vault is completely offline and encrypted, linking your drive automatically syncs your encrypted database so you can recover your passwords if you lose this device." 
+                                   TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                   
+                        <Button Command="{Binding SignInWithGoogleCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                            <Grid ColumnDefinitions="Auto, *">
+                                <Image Grid.Column="0" Source="avares://Vaulture.Desktop/Assets/google.png" Width="16" Height="16" Margin="0,0,10,0" />
+                                <TextBlock Grid.Column="1" Text="Sign in with Google Drive" HorizontalAlignment="Center" />
+                            </Grid>
+                        </Button>
+                    </StackPanel>
+                </Border>
+                
+                <!-- STEP 2: Master Password -->
+                <StackPanel Spacing="20" IsVisible="{Binding IsGoogleAuthenticated}">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <TextBlock Text="🔐" />
+                        <TextBlock Text="Step 2: Unlock Local Vault" FontWeight="SemiBold" />
+                    </StackPanel>
+                    
+                    <TextBlock Text="Master Password" />
+                    <TextBox Text="{Binding MasterPassword}" PasswordChar="•" PlaceholderText="Enter your master password" Classes="revealPasswordButton" />
+                    
+                    <Button Content="Unlock Vault" Command="{Binding LoginCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" />
+                </StackPanel>
+                
             </StackPanel>
         </StackPanel>
+        
+        <!-- Logged In Profile Badge -->
+        <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="20" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="20" Padding="10,5" IsVisible="{Binding IsGoogleAuthenticated}">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border CornerRadius="15" Width="30" Height="30" ClipToBounds="True">
+                    <Image Source="{Binding UserAvatar}" Stretch="UniformToFill" />
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding UserName}" FontWeight="SemiBold" FontSize="12" />
+                    <TextBlock Text="{Binding UserEmail}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>
