@@ -134,9 +134,10 @@ public partial class LoginViewModel : ViewModelBase
                 _mainViewModel.NavigateTo(new DashboardViewModel(_mainViewModel, dbContext));
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            ErrorMessage = "Failed to unlock vault. Incorrect password or corrupted database.";
+            Console.WriteLine($"DB Error: {ex}");
+            ErrorMessage = "Error: " + ex.Message;
         }
     }
 
