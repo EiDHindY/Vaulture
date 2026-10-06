@@ -55,4 +55,46 @@ public class EncryptionService
         }
         return sb.ToString();
     }
+
+    public static void CreateRecoveryFile(string masterPassword, string recoveryKey, string filePath)
+    {
+        // Use the recovery key (without dashes) as the AES key
+        byte[] key = Encoding.UTF8.GetBytes(recoveryKey.Replace("-", "").PadRight(32, '0').Substring(0, 32));
+        byte[] iv = new byte[16];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(iv);
+
+        using var aes = Aes.Create();
+        aes.Key = key;
+        aes.IV = iv;
+
+        using var encryptor = aes.CreateEncryptor();
+        byte[] passBytes = Encoding.UTF8.GetBytes(masterPassword);
+        byte[] encryptedPass = encryptor.TransformFinalBlock(passBytes, 0, passBytes.Length);
+
+        byte[] finalPayload = new byte[iv.Length + encryptedPass.Length];
+        Buffer.BlockCopy(iv, 0, finalPayload, 0, iv.Length);
+        Buffer.BlockCopy(encryptedPass, 0, finalPayload, iv.Length, encryptedPass.Length);
+
+        System.IO.File.WriteAllBytes(filePath, finalPayload);
+    }
+
+    public static string RecoverMasterPassword(string recoveryKey, string filePath)
+    {
+        byte[] payload = System.IO.File.ReadAllBytes(filePath);
+        byte[] iv = new byte[16];
+        Buffer.BlockCopy(payload, 0, iv, 0, 16);
+        byte[] encryptedPass = new byte[payload.Length - 16];
+        Buffer.BlockCopy(payload, 16, encryptedPass, 0, encryptedPass.Length);
+
+        byte[] key = Encoding.UTF8.GetBytes(recoveryKey.Replace("-", "").PadRight(32, '0').Substring(0, 32));
+
+        using var aes = Aes.Create();
+        aes.Key = key;
+        aes.IV = iv;
+
+        using var decryptor = aes.CreateDecryptor();
+        byte[] passBytes = decryptor.TransformFinalBlock(encryptedPass, 0, encryptedPass.Length);
+        return Encoding.UTF8.GetString(passBytes);
+    }
 }

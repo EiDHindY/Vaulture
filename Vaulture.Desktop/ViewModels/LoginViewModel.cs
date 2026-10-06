@@ -125,7 +125,14 @@ public partial class LoginViewModel : ViewModelBase
             var dbContext = new VaultDbContext(dbPath, key);
             dbContext.Database.EnsureCreated();
 
-            _mainViewModel.NavigateTo(new DashboardViewModel(_mainViewModel, dbContext));
+            if (IsFirstTimeSetup)
+            {
+                _mainViewModel.NavigateTo(new RecoveryKeyViewModel(_mainViewModel, dbContext, MasterPassword));
+            }
+            else
+            {
+                _mainViewModel.NavigateTo(new DashboardViewModel(_mainViewModel, dbContext));
+            }
         }
         catch (Exception)
         {
@@ -136,12 +143,14 @@ public partial class LoginViewModel : ViewModelBase
     [RelayCommand]
     private void GenerateMasterPassword()
     {
-        // Generate a strong, memorable 4-word passphrase with a number and symbol
-        string[] words = { "Cyber", "Neon", "Quantum", "Cipher", "Vault", "Echo", "Flux", "Nova", "Pulse", "Apex", "Matrix", "Zenith", "Onyx", "Rogue", "Ghost" };
+        const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_-+=";
         var random = new Random();
-        
-        string pass = $"{words[random.Next(words.Length)]}-{words[random.Next(words.Length)]}-{words[random.Next(words.Length)]}-{words[random.Next(words.Length)]}{random.Next(10, 99)}!";
-        MasterPassword = pass;
+        var pass = new char[20];
+        for (int i = 0; i < pass.Length; i++)
+        {
+            pass[i] = chars[random.Next(chars.Length)];
+        }
+        MasterPassword = new string(pass);
     }
 
     [RelayCommand]

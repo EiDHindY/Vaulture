@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vaulture.Desktop.ViewModels"
+             x:Class="Vaulture.Desktop.Views.RecoveryKeyView"
+             x:DataType="vm:RecoveryKeyViewModel">
+
+    <Grid VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="500">
+        <StackPanel Spacing="20">
+            <TextBlock Text="🚨 EMERGENCY RECOVERY KEY" FontSize="24" FontWeight="Bold" Foreground="Red" HorizontalAlignment="Center" />
+            
+            <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="15">
+                    <TextBlock Text="Print this out or write it on a piece of paper and hide it in a physical safe." FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="This is the ONLY way to recover your vault if you forget your master password. We cannot recover it for you." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    
+                    <Border Background="#10FFFFFF" BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="15" Margin="0,10">
+                        <TextBlock Text="{Binding RecoveryKey}" FontSize="28" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Center" Foreground="{DynamicResource AccentFillColorDefaultBrush}" />
+                    </Border>
+                    
+                    <TextBlock Text="DO NOT save this on your computer or in a cloud drive." Foreground="Red" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+            
+            <Button Content="I have safely stored my recovery key" Command="{Binding ContinueToDashboardCommand}" Classes="accent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Cursor="Hand" Padding="15" FontSize="16" />
+        </StackPanel>
+    </Grid>
+</UserControl>
