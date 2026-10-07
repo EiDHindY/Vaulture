@@ -10,12 +10,17 @@
             
             <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8" Padding="20">
                 <StackPanel Spacing="15">
-                    <TextBlock Text="Print this out or write it on a piece of paper and hide it in a physical safe." FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="⚠️ Remember your Master Password! It is the primary way to unlock your vault." FontWeight="Bold" Foreground="{DynamicResource AccentFillColorDefaultBrush}" TextWrapping="Wrap" />
+                    
+                    <TextBlock Text="Print this recovery key out or write it on a piece of paper and hide it in a physical safe." FontWeight="SemiBold" TextWrapping="Wrap" />
                     <TextBlock Text="This is the ONLY way to recover your vault if you forget your master password. We cannot recover it for you." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
                     
-                    <Border Background="#10FFFFFF" BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="15" Margin="0,10">
-                        <TextBlock Text="{Binding RecoveryKey}" FontSize="28" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Center" Foreground="{DynamicResource AccentFillColorDefaultBrush}" />
-                    </Border>
+                    <Grid ColumnDefinitions="*, Auto" Margin="0,10">
+                        <Border Grid.Column="0" Background="#10FFFFFF" BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" BorderThickness="1" CornerRadius="8,0,0,8" Padding="15">
+                            <SelectableTextBlock Text="{Binding RecoveryKey}" FontSize="28" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource AccentFillColorDefaultBrush}" />
+                        </Border>
+                        <Button Grid.Column="1" Content="📋 Copy" Click="CopyKey_Click" CornerRadius="0,8,8,0" Background="{DynamicResource AccentFillColorDefaultBrush}" Foreground="Black" FontWeight="Bold" Cursor="Hand" VerticalAlignment="Stretch" VerticalContentAlignment="Center" />
+                    </Grid>
                     
                     <TextBlock Text="DO NOT save this on your computer or in a cloud drive." Foreground="Red" FontWeight="SemiBold" HorizontalAlignment="Center" />
                 </StackPanel>
