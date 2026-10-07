@@ -93,6 +93,8 @@ public partial class DashboardViewModel : ViewModelBase
             // 3. Show Success Screen
             IsSettingsVisible = false;
             IsSettingsSuccessVisible = true;
+            
+            _ = Vaulture.Core.Services.NotificationService.SendNotificationAsync("Master Password Changed", "Your Vaulture Master Password was just changed, and the database was re-encrypted.");
         }
         catch (System.Exception ex)
         {

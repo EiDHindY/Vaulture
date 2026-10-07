@@ -34,6 +34,6 @@ public partial class RecoveryKeyViewModel : ViewModelBase
     [RelayCommand]
     private void ContinueToDashboard()
     {
-        _mainViewModel.NavigateTo(new DashboardViewModel(_mainViewModel, _dbContext));
+        _mainViewModel.NavigateTo(new LinkGoogleAccountViewModel(_mainViewModel, _dbContext));
     }
 }

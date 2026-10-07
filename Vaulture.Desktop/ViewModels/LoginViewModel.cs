@@ -64,6 +64,8 @@ public partial class LoginViewModel : ViewModelBase
 
             var dbContext = new VaultDbContext(dbPath, key);
             dbContext.Database.EnsureCreated();
+            
+            _ = NotificationService.SendNotificationAsync("Vault Unlocked", "Your Vaulture database was successfully decrypted and unlocked.");
 
             if (IsFirstTimeSetup)
             {
@@ -77,7 +79,8 @@ public partial class LoginViewModel : ViewModelBase
         catch (Exception ex)
         {
             Console.WriteLine($"DB Error: {ex}");
-            ErrorMessage = "Error: " + ex.Message;
+            ErrorMessage = "Invalid Master Password.";
+            _ = NotificationService.SendNotificationAsync("Failed Login Attempt", "A failed attempt to decrypt and unlock your Vaulture database occurred.");
         }
     }
 
@@ -178,6 +181,8 @@ public partial class LoginViewModel : ViewModelBase
             // Re-evaluate first time setup
             IsFirstTimeSetup = true;
             IsNotFirstTimeSetup = false;
+            
+            _ = NotificationService.SendNotificationAsync("Vault Destroyed", "Your Vaulture database was permanently deleted and factory reset.");
         }
         catch (Exception ex)
         {
