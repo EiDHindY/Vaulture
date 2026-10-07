@@ -62,24 +62,11 @@
                 
                 <!-- NEW VAULT SETUP UI -->
                 <StackPanel Spacing="20" IsVisible="{Binding IsFirstTimeSetup}">
-                    <!-- Introduction Card -->
-                    <Border Background="#10FFFFFF" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="20">
-                        <StackPanel Spacing="10">
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <TextBlock Text="🦅" FontSize="20" />
-                                <TextBlock Text="Welcome to Vaulture" FontSize="18" FontWeight="Bold" />
-                            </StackPanel>
-                            <TextBlock Text="Vaulture is a completely offline-first, zero-knowledge password manager. Your secrets never leave your device unless you explicitly link a cloud backup later." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        </StackPanel>
-                    </Border>
                     
                     <!-- Warning Card -->
                     <Border Background="#10FF0000" BorderBrush="Red" BorderThickness="1" CornerRadius="8" Padding="20">
                         <StackPanel Spacing="10">
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <TextBlock Text="⚠️" FontSize="20" />
-                                <TextBlock Text="Crucial Security Warning" FontSize="16" FontWeight="Bold" Foreground="Red" />
-                            </StackPanel>
+                            <TextBlock Text="Crucial Security Warning" FontSize="16" FontWeight="Bold" Foreground="Red" />
                             <TextBlock Text="Your Master Password mathematically encrypts your local database. Vaulture does not know it, and we cannot reset it. If you forget your Master Password, your data is permanently gone forever." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         </StackPanel>
                     </Border>
