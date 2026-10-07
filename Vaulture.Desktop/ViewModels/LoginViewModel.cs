@@ -164,6 +164,9 @@ public partial class LoginViewModel : ViewModelBase
         
         try
         {
+            // VERY IMPORTANT: Clear SQLite connection pools so the file handle is released
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+
             if (Directory.Exists(vaultDir))
             {
                 var dbPath = Path.Combine(vaultDir, "vault.db");
