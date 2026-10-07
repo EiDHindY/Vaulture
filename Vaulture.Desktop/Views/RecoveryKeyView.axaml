@@ -4,29 +4,62 @@
              x:Class="Vaulture.Desktop.Views.RecoveryKeyView"
              x:DataType="vm:RecoveryKeyViewModel">
 
-    <Grid VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="500">
-        <StackPanel Spacing="20">
-            <TextBlock Text="🚨 EMERGENCY RECOVERY KEY" FontSize="24" FontWeight="Bold" Foreground="Red" HorizontalAlignment="Center" />
-            
-            <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8" Padding="20">
-                <StackPanel Spacing="15">
-                    <TextBlock Text="⚠️ Remember your Master Password! It is the primary way to unlock your vault." FontWeight="Bold" Foreground="{DynamicResource AccentFillColorDefaultBrush}" TextWrapping="Wrap" />
+    <Grid>
+        <!-- MAIN VIEW -->
+        <Grid VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="500">
+            <StackPanel Spacing="20">
+                <TextBlock Text="EMERGENCY RECOVERY KEY" FontSize="20" FontWeight="Bold" Foreground="Red" HorizontalAlignment="Center" LetterSpacing="2" />
+                
+                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8" Padding="25">
+                    <StackPanel Spacing="20">
+                        <TextBlock Text="Remember your Master Password! It is the primary way to unlock your vault." FontWeight="Bold" Foreground="{DynamicResource AccentFillColorDefaultBrush}" TextWrapping="Wrap" />
+                        
+                        <TextBlock Text="Print this recovery key out or write it on a piece of paper and hide it in a physical safe." FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Text="This is the ONLY way to recover your vault if you forget your master password. We cannot recover it for you." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                        
+                        <Grid ColumnDefinitions="*, Auto" Margin="0,10">
+                            <Border Grid.Column="0" Background="#10FFFFFF" BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" BorderThickness="1" CornerRadius="8,0,0,8" Padding="15">
+                                <SelectableTextBlock Text="{Binding RecoveryKey}" FontSize="28" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource AccentFillColorDefaultBrush}" />
+                            </Border>
+                            <Button Grid.Column="1" CommandParameter="{Binding RecoveryKey}" Click="CopyKey_Click" CornerRadius="0,8,8,0" Background="{DynamicResource AccentFillColorDefaultBrush}" Foreground="Black" FontWeight="Bold" Cursor="Hand" VerticalAlignment="Stretch" VerticalContentAlignment="Center" Padding="20,0">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <PathIcon Data="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" Width="14" Height="14" Foreground="Black" />
+                                    <TextBlock Text="Copy" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        
+                        <TextBlock Text="DO NOT save this on your computer or in a cloud drive." Foreground="Red" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+                
+                <Button Content="I have safely stored my recovery key" Command="{Binding ContinueToDashboardCommand}" Classes="accent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Cursor="Hand" Padding="15" FontSize="16" />
+            </StackPanel>
+        </Grid>
+        
+        <!-- MASTER PASSWORD POPUP OVERLAY -->
+        <Grid Background="#CC000000" IsVisible="{Binding ShowMasterPasswordPopup}">
+            <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" CornerRadius="12" Padding="30" HorizontalAlignment="Center" VerticalAlignment="Center" Width="450" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
+                <StackPanel Spacing="20">
+                    <TextBlock Text="Vault Created Successfully" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource AccentFillColorDefaultBrush}" />
                     
-                    <TextBlock Text="Print this recovery key out or write it on a piece of paper and hide it in a physical safe." FontWeight="SemiBold" TextWrapping="Wrap" />
-                    <TextBlock Text="This is the ONLY way to recover your vault if you forget your master password. We cannot recover it for you." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    <TextBlock Text="Please save your Master Password now. You will need it to unlock your vault next time you open the app." TextWrapping="Wrap" TextAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     
                     <Grid ColumnDefinitions="*, Auto" Margin="0,10">
-                        <Border Grid.Column="0" Background="#10FFFFFF" BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" BorderThickness="1" CornerRadius="8,0,0,8" Padding="15">
-                            <SelectableTextBlock Text="{Binding RecoveryKey}" FontSize="28" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource AccentFillColorDefaultBrush}" />
+                        <Border Grid.Column="0" Background="#10FFFFFF" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8,0,0,8" Padding="15">
+                            <SelectableTextBlock Text="{Binding MasterPassword}" FontSize="18" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
-                        <Button Grid.Column="1" Content="📋 Copy" Click="CopyKey_Click" CornerRadius="0,8,8,0" Background="{DynamicResource AccentFillColorDefaultBrush}" Foreground="Black" FontWeight="Bold" Cursor="Hand" VerticalAlignment="Stretch" VerticalContentAlignment="Center" />
+                        <Button Grid.Column="1" CommandParameter="{Binding MasterPassword}" Click="CopyKey_Click" CornerRadius="0,8,8,0" Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,1,1,1" FontWeight="Bold" Cursor="Hand" VerticalAlignment="Stretch" VerticalContentAlignment="Center" Padding="15,0">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" Width="14" Height="14" />
+                                <TextBlock Text="Copy" />
+                            </StackPanel>
+                        </Button>
                     </Grid>
                     
-                    <TextBlock Text="DO NOT save this on your computer or in a cloud drive." Foreground="Red" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    <Button Content="I have copied my Master Password" Command="{Binding ClosePopupCommand}" Classes="accent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Cursor="Hand" Padding="15" FontWeight="Bold" />
                 </StackPanel>
             </Border>
-            
-            <Button Content="I have safely stored my recovery key" Command="{Binding ContinueToDashboardCommand}" Classes="accent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Cursor="Hand" Padding="15" FontSize="16" />
-        </StackPanel>
+        </Grid>
     </Grid>
 </UserControl>

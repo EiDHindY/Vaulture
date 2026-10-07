@@ -15,17 +15,14 @@ public partial class RecoveryKeyView : UserControl
     private async void CopyKey_Click(object? sender, RoutedEventArgs e)
     {
         var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel?.Clipboard != null && DataContext is RecoveryKeyViewModel vm)
+        if (topLevel?.Clipboard != null && sender is Button btn && btn.CommandParameter is string textToCopy)
         {
-            await topLevel.Clipboard.SetTextAsync(vm.RecoveryKey);
+            await topLevel.Clipboard.SetTextAsync(textToCopy);
             
-            if (sender is Button btn)
-            {
-                var oldContent = btn.Content;
-                btn.Content = "Copied!";
-                await System.Threading.Tasks.Task.Delay(2000);
-                btn.Content = oldContent;
-            }
+            var oldContent = btn.Content;
+            btn.Content = "Copied!";
+            await System.Threading.Tasks.Task.Delay(2000);
+            btn.Content = oldContent;
         }
     }
 }
