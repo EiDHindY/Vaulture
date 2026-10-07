@@ -19,7 +19,12 @@
                         <Button Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" Padding="5" Cursor="Hand">
                             <Button.Flyout>
                                 <MenuFlyout Placement="BottomEdgeAlignedLeft">
-                                    <MenuItem Header="Unlink Google Account" Command="{Binding UnlinkGoogleAccountCommand}">
+                                    <MenuItem Header="Unlink Google Account" Command="{Binding UnlinkGoogleAccountCommand}" IsVisible="{Binding IsGoogleLinked}">
+                                        <MenuItem.Icon>
+                                            <TextBlock Text="🔗" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="Link Google Account" Command="{Binding LinkGoogleAccountCommand}" IsVisible="{Binding !IsGoogleLinked}">
                                         <MenuItem.Icon>
                                             <TextBlock Text="🔗" />
                                         </MenuItem.Icon>

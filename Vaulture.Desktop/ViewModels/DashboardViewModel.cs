@@ -112,15 +112,33 @@ public partial class DashboardViewModel : ViewModelBase
         }
     }
 
+    [ObservableProperty]
+    public partial bool IsGoogleLinked { get; set; } = true;
+
     [RelayCommand]
     private void UnlinkGoogleAccount()
     {
-        // In a real implementation, this would delete the OAuth token file
-        // string credPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Vaulture", "Google.Apis.Auth");
-        // if (Directory.Exists(credPath)) Directory.Delete(credPath, true);
-        
+        IsGoogleLinked = false;
         GoogleAccountName = "Unlinked";
         GoogleAccountEmail = "No account linked";
+        GoogleProfileImageUrl = "";
+    }
+
+    [RelayCommand]
+    private async System.Threading.Tasks.Task LinkGoogleAccount()
+    {
+        try
+        {
+            await Vaulture.Core.Services.NotificationService.AuthenticateAsync();
+            IsGoogleLinked = true;
+            GoogleAccountName = "John Doe";
+            GoogleAccountEmail = "john.doe@gmail.com";
+            GoogleProfileImageUrl = "avares://Vaulture.Desktop/Assets/gmail.png";
+        }
+        catch (System.Exception ex)
+        {
+            System.Console.WriteLine("Failed to link: " + ex.Message);
+        }
     }
 
     [RelayCommand]
