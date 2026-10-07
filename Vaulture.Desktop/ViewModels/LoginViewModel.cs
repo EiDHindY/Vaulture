@@ -28,6 +28,9 @@ public partial class LoginViewModel : ViewModelBase
     public partial bool IsForgotPasswordVisible { get; set; } = false;
 
     [ObservableProperty]
+    public partial bool IsRecoverySuccessVisible { get; set; } = false;
+
+    [ObservableProperty]
     public partial string RecoveryKeyInput { get; set; } = string.Empty;
 
     public LoginViewModel(MainViewModel mainViewModel)
@@ -131,16 +134,23 @@ public partial class LoginViewModel : ViewModelBase
             string recoveredPassword = EncryptionService.RecoverMasterPassword(RecoveryKeyInput, recoveryPath);
             MasterPassword = recoveredPassword;
             
-            ErrorMessage = "Vault recovered! Copy this master password and keep it safe.";
-            
-            // Go back to login screen with password filled in
-            HideForgotPassword();
+            // Show the success screen so they can copy it
+            IsForgotPasswordVisible = false;
+            IsRecoverySuccessVisible = true;
+            ErrorMessage = "";
         }
         catch (Exception ex)
         {
             ErrorMessage = "Invalid Recovery Key.";
             Console.WriteLine(ex);
         }
+    }
+
+    [RelayCommand]
+    private void ReturnToLoginFromRecovery()
+    {
+        IsRecoverySuccessVisible = false;
+        IsNotFirstTimeSetup = true;
     }
 
     [RelayCommand]
