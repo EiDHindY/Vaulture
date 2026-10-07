@@ -44,7 +44,7 @@
     </UserControl.Styles>
 
     <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="400" Spacing="20">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="500" Spacing="20">
             
             <Image Classes="logo" Source="avares://Vaulture.Desktop/Assets/vaulture-logo.png" Width="140" Height="140" Margin="0,0,0,10">
                 <Image.RenderTransform>
@@ -60,26 +60,55 @@
                 
                 <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" HorizontalAlignment="Center" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 
-                <!-- Master Password -->
-                <StackPanel Spacing="20">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <TextBlock Text="🔐" />
-                        <TextBlock Text="Create Master Password" FontWeight="SemiBold" IsVisible="{Binding IsFirstTimeSetup}" />
-                        <TextBlock Text="Unlock Local Vault" FontWeight="SemiBold" IsVisible="{Binding IsNotFirstTimeSetup}" />
+                <!-- NEW VAULT SETUP UI -->
+                <StackPanel Spacing="20" IsVisible="{Binding IsFirstTimeSetup}">
+                    <!-- Introduction Card -->
+                    <Border Background="#10FFFFFF" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="20">
+                        <StackPanel Spacing="10">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Text="🦅" FontSize="20" />
+                                <TextBlock Text="Welcome to Vaulture" FontSize="18" FontWeight="Bold" />
+                            </StackPanel>
+                            <TextBlock Text="Vaulture is a completely offline-first, zero-knowledge password manager. Your secrets never leave your device unless you explicitly link a cloud backup later." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Warning Card -->
+                    <Border Background="#10FF0000" BorderBrush="Red" BorderThickness="1" CornerRadius="8" Padding="20">
+                        <StackPanel Spacing="10">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Text="⚠️" FontSize="20" />
+                                <TextBlock Text="Crucial Security Warning" FontSize="16" FontWeight="Bold" Foreground="Red" />
+                            </StackPanel>
+                            <TextBlock Text="Your Master Password mathematically encrypts your local database. Vaulture does not know it, and we cannot reset it. If you forget your Master Password, your data is permanently gone forever." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Password Input -->
+                    <StackPanel Spacing="10" Margin="0,10,0,0">
+                        <TextBlock Text="Set Master Password" FontWeight="SemiBold" />
+                        <Grid ColumnDefinitions="*, Auto">
+                            <TextBox Grid.Column="0" Text="{Binding MasterPassword}" PasswordChar="•" PlaceholderText="Create a highly secure password" Classes="revealPasswordButton" />
+                            <Button Grid.Column="1" Command="{Binding GenerateMasterPasswordCommand}" Content="Generate Strong Password" Cursor="Hand" Margin="10,0,0,0" Classes="accent" />
+                        </Grid>
+                        <Button Content="Create Encrypted Vault" Command="{Binding LoginCommand}" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" Margin="0,10,0,0" Padding="15" FontSize="16" FontWeight="Bold" />
                     </StackPanel>
-                    
-                    <TextBlock IsVisible="{Binding IsFirstTimeSetup}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                               Text="Your Master Password is the only key to your vault. It encrypts all your data locally on your device. We cannot recover it for you if you lose it, so make sure it is strong and memorable!" />
-                    
-                    <TextBlock Text="Master Password" />
-                    
-                    <Grid ColumnDefinitions="*, Auto">
-                        <TextBox Grid.Column="0" Text="{Binding MasterPassword}" PasswordChar="•" PlaceholderText="Enter your master password" Classes="revealPasswordButton" />
-                        <Button Grid.Column="1" Command="{Binding GenerateMasterPasswordCommand}" Content="Generate Password" Cursor="Hand" Margin="10,0,0,0" IsVisible="{Binding IsFirstTimeSetup}" />
-                    </Grid>
-                    
-                    <Button Content="Create Vault" Command="{Binding LoginCommand}" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" IsVisible="{Binding IsFirstTimeSetup}" />
-                    <Button Content="Unlock Vault" Command="{Binding LoginCommand}" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" IsVisible="{Binding IsNotFirstTimeSetup}" />
+                </StackPanel>
+
+                <!-- UNLOCK EXISTING VAULT UI -->
+                <StackPanel Spacing="20" IsVisible="{Binding IsNotFirstTimeSetup}">
+                    <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="25">
+                        <StackPanel Spacing="15">
+                            <TextBlock Text="Welcome Back" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" />
+                            <TextBlock Text="Enter your Master Password to decrypt and unlock your local vault." TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            
+                            <TextBox Text="{Binding MasterPassword}" PasswordChar="•" PlaceholderText="Master Password" Classes="revealPasswordButton" Margin="0,10" />
+                            
+                            <Button Content="Unlock Vault" Command="{Binding LoginCommand}" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" Padding="15" FontSize="16" FontWeight="Bold" />
+                            
+                            <Button Content="Forgot Password? (Factory Reset)" Cursor="Hand" HorizontalAlignment="Center" Background="Transparent" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,5,0,0" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
                 
             </StackPanel>
