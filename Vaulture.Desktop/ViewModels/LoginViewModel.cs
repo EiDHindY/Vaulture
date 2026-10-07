@@ -19,21 +19,6 @@ public partial class LoginViewModel : ViewModelBase
     public partial string ErrorMessage { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string? UserEmail { get; set; }
-
-    [ObservableProperty]
-    public partial string? UserName { get; set; }
-
-    [ObservableProperty]
-    public partial Avalonia.Media.Imaging.Bitmap? UserAvatar { get; set; }
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsNotGoogleAuthenticated))]
-    public partial bool IsGoogleAuthenticated { get; set; } = false;
-
-    public bool IsNotGoogleAuthenticated => !IsGoogleAuthenticated;
-
-    [ObservableProperty]
     public partial bool IsFirstTimeSetup { get; set; } = false;
 
     [ObservableProperty]
@@ -47,60 +32,6 @@ public partial class LoginViewModel : ViewModelBase
         string dbPath = Path.Combine(appData, "Vaulture", "vault.db");
         IsFirstTimeSetup = !File.Exists(dbPath);
         IsNotFirstTimeSetup = !IsFirstTimeSetup;
-    }
-
-    [RelayCommand]
-    private async Task SignInWithGoogle()
-    {
-        ErrorMessage = "";
-        
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        string vaultDir = Path.Combine(appData, "Vaulture");
-        if (!Directory.Exists(vaultDir)) Directory.CreateDirectory(vaultDir);
-
-        string secretsPath = Path.Combine(vaultDir, "client_secrets.json");
-        string credentialsPath = Path.Combine(vaultDir, "Google.Apis.Auth");
-
-        if (!File.Exists(secretsPath))
-        {
-            ErrorMessage = "Mandatory: Please place 'client_secrets.json' in " + vaultDir + " to enable Google Drive Backup.";
-            return;
-        }
-
-        try
-        {
-            var driveService = new GoogleDriveSyncService();
-            bool success = await driveService.AuthenticateAsync(secretsPath, credentialsPath);
-
-            if (success)
-            {
-                UserEmail = driveService.LoggedInEmail;
-                UserName = driveService.LoggedInName;
-                
-                if (!string.IsNullOrEmpty(driveService.LoggedInAvatarUrl))
-                {
-                    try
-                    {
-                        using var httpClient = new System.Net.Http.HttpClient();
-                        var imageBytes = await httpClient.GetByteArrayAsync(driveService.LoggedInAvatarUrl);
-                        using var ms = new MemoryStream(imageBytes);
-                        UserAvatar = new Avalonia.Media.Imaging.Bitmap(ms);
-                    }
-                    catch { /* ignore */ }
-                }
-                
-                IsGoogleAuthenticated = true;
-                ErrorMessage = "";
-            }
-            else
-            {
-                ErrorMessage = "Google Drive authentication failed. This is required to access your vault.";
-            }
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = "Authentication error: " + ex.Message;
-        }
     }
 
     [RelayCommand]
@@ -152,23 +83,5 @@ public partial class LoginViewModel : ViewModelBase
             pass[i] = chars[random.Next(chars.Length)];
         }
         MasterPassword = new string(pass);
-    }
-
-    [RelayCommand]
-    private void SignOut()
-    {
-        // Clear cached auth tokens
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        string credentialsPath = Path.Combine(appData, "Vaulture", "Google.Apis.Auth");
-        if (Directory.Exists(credentialsPath))
-        {
-            Directory.Delete(credentialsPath, true);
-        }
-
-        // Reset state
-        IsGoogleAuthenticated = false;
-        UserEmail = null;
-        UserName = null;
-        UserAvatar = null;
     }
 }
