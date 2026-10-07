@@ -19,6 +19,16 @@ public partial class DashboardViewModel : ViewModelBase
     [ObservableProperty]
     public partial ObservableCollection<Entry> CurrentEntries { get; set; } = new();
 
+    // Google Profile state
+    [ObservableProperty]
+    public partial string GoogleAccountName { get; set; } = "John Doe";
+
+    [ObservableProperty]
+    public partial string GoogleAccountEmail { get; set; } = "john.doe@gmail.com";
+
+    [ObservableProperty]
+    public partial string GoogleProfileImageUrl { get; set; } = "avares://Vaulture.Desktop/Assets/gmail.png"; // Fallback to gmail icon
+
     // Settings state
     [ObservableProperty]
     public partial bool IsSettingsVisible { get; set; } = false;
@@ -100,6 +110,17 @@ public partial class DashboardViewModel : ViewModelBase
         {
             SettingsErrorMessage = "Failed to change password: " + ex.Message;
         }
+    }
+
+    [RelayCommand]
+    private void UnlinkGoogleAccount()
+    {
+        // In a real implementation, this would delete the OAuth token file
+        // string credPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Vaulture", "Google.Apis.Auth");
+        // if (Directory.Exists(credPath)) Directory.Delete(credPath, true);
+        
+        GoogleAccountName = "Unlinked";
+        GoogleAccountEmail = "No account linked";
     }
 
     [RelayCommand]
