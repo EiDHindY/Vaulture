@@ -44,12 +44,6 @@ public partial class LinkGoogleAccountViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
-    private void Skip()
-    {
-        ContinueToDashboard();
-    }
-    
     private void ContinueToDashboard()
     {
         _mainViewModel.NavigateTo(new DashboardViewModel(_mainViewModel, _dbContext));
