@@ -24,6 +24,12 @@ public partial class LoginViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool IsNotFirstTimeSetup { get; set; } = true;
 
+    [ObservableProperty]
+    public partial bool IsForgotPasswordVisible { get; set; } = false;
+
+    [ObservableProperty]
+    public partial string RecoveryKeyInput { get; set; } = string.Empty;
+
     public LoginViewModel(MainViewModel mainViewModel)
     {
         _mainViewModel = mainViewModel;
@@ -83,5 +89,89 @@ public partial class LoginViewModel : ViewModelBase
             pass[i] = chars[random.Next(chars.Length)];
         }
         MasterPassword = new string(pass);
+    }
+
+    [RelayCommand]
+    private void ShowForgotPassword()
+    {
+        IsForgotPasswordVisible = true;
+        IsNotFirstTimeSetup = false;
+        ErrorMessage = "";
+    }
+
+    [RelayCommand]
+    private void HideForgotPassword()
+    {
+        IsForgotPasswordVisible = false;
+        IsNotFirstTimeSetup = true;
+        ErrorMessage = "";
+    }
+
+    [RelayCommand]
+    private void RecoverVault()
+    {
+        ErrorMessage = "";
+        if (string.IsNullOrWhiteSpace(RecoveryKeyInput))
+        {
+            ErrorMessage = "Please enter your Recovery Key.";
+            return;
+        }
+
+        try
+        {
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string recoveryPath = Path.Combine(appData, "Vaulture", "recovery.dat");
+
+            if (!File.Exists(recoveryPath))
+            {
+                ErrorMessage = "Recovery file not found. Factory Reset is the only option.";
+                return;
+            }
+
+            string recoveredPassword = EncryptionService.RecoverMasterPassword(RecoveryKeyInput, recoveryPath);
+            MasterPassword = recoveredPassword;
+            
+            ErrorMessage = "Vault recovered! Copy this master password and keep it safe.";
+            
+            // Go back to login screen with password filled in
+            HideForgotPassword();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Invalid Recovery Key.";
+            Console.WriteLine(ex);
+        }
+    }
+
+    [RelayCommand]
+    private void FactoryReset()
+    {
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string vaultDir = Path.Combine(appData, "Vaulture");
+        
+        try
+        {
+            if (Directory.Exists(vaultDir))
+            {
+                var dbPath = Path.Combine(vaultDir, "vault.db");
+                var recPath = Path.Combine(vaultDir, "recovery.dat");
+                if (File.Exists(dbPath)) File.Delete(dbPath);
+                if (File.Exists(recPath)) File.Delete(recPath);
+            }
+            
+            // Reset state
+            MasterPassword = "";
+            RecoveryKeyInput = "";
+            ErrorMessage = "";
+            IsForgotPasswordVisible = false;
+            
+            // Re-evaluate first time setup
+            IsFirstTimeSetup = true;
+            IsNotFirstTimeSetup = false;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Failed to factory reset: " + ex.Message;
+        }
     }
 }

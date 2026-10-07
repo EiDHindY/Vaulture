@@ -93,7 +93,32 @@
                             
                             <Button Content="Unlock Vault" Command="{Binding LoginCommand}" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" Padding="15" FontSize="16" FontWeight="Bold" />
                             
-                            <Button Content="Forgot Password? (Factory Reset)" Cursor="Hand" HorizontalAlignment="Center" Background="Transparent" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,5,0,0" />
+                            <Button Content="Forgot Password? (Recover or Reset)" Command="{Binding ShowForgotPasswordCommand}" Cursor="Hand" HorizontalAlignment="Center" Background="Transparent" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,5,0,0" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- FORGOT PASSWORD UI -->
+                <StackPanel Spacing="20" IsVisible="{Binding IsForgotPasswordVisible}">
+                    <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="25">
+                        <StackPanel Spacing="15">
+                            <TextBlock Text="Vault Recovery" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" />
+                            <TextBlock Text="Enter your 16-character Emergency Recovery Key to decrypt your Master Password." TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            
+                            <TextBox Text="{Binding RecoveryKeyInput}" PlaceholderText="XXXX-XXXX-XXXX-XXXX" FontFamily="Consolas" HorizontalContentAlignment="Center" Margin="0,10" />
+                            
+                            <Button Content="Recover Master Password" Command="{Binding RecoverVaultCommand}" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" Padding="15" FontSize="16" FontWeight="Bold" />
+                            
+                            <Button Content="Cancel" Command="{Binding HideForgotPasswordCommand}" Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="Transparent" />
+                        </StackPanel>
+                    </Border>
+                    
+                    <Border Background="#10FF0000" BorderBrush="Red" BorderThickness="1" CornerRadius="8" Padding="20">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="Lost your recovery key?" FontWeight="Bold" Foreground="Red" />
+                            <TextBlock Text="If you lost both your password and your recovery key, you are permanently locked out. The only option is to delete your vault entirely and start from scratch." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            
+                            <Button Content="Delete Vault &amp; Factory Reset" Command="{Binding FactoryResetCommand}" Cursor="Hand" HorizontalAlignment="Center" Background="#33FF0000" Foreground="Red" FontWeight="Bold" Margin="0,10,0,0" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
