@@ -50,6 +50,36 @@ public partial class DashboardViewModel : ViewModelBase
         _mainViewModel = mainViewModel;
         _dbContext = dbContext;
         LoadData();
+        _ = FetchProfileAsync();
+    }
+
+    private async System.Threading.Tasks.Task FetchProfileAsync()
+    {
+        try
+        {
+            // Check if tokens exist
+            string appData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData);
+            string credPath = System.IO.Path.Combine(appData, "Vaulture", "Google.Apis.Auth");
+            if (System.IO.Directory.Exists(credPath) && System.IO.Directory.GetFiles(credPath).Length > 0)
+            {
+                var profile = await Vaulture.Core.Services.NotificationService.GetGoogleProfileAsync();
+                GoogleAccountName = profile.Name;
+                GoogleAccountEmail = profile.Email;
+                GoogleProfileImageUrl = profile.PictureUrl;
+                IsGoogleLinked = true;
+            }
+            else
+            {
+                IsGoogleLinked = false;
+                GoogleAccountName = "Unlinked";
+                GoogleAccountEmail = "No account linked";
+                GoogleProfileImageUrl = "";
+            }
+        }
+        catch
+        {
+            IsGoogleLinked = false;
+        }
     }
 
     [RelayCommand]
@@ -130,10 +160,11 @@ public partial class DashboardViewModel : ViewModelBase
         try
         {
             await Vaulture.Core.Services.NotificationService.AuthenticateAsync();
+            var profile = await Vaulture.Core.Services.NotificationService.GetGoogleProfileAsync();
             IsGoogleLinked = true;
-            GoogleAccountName = "John Doe";
-            GoogleAccountEmail = "john.doe@gmail.com";
-            GoogleProfileImageUrl = "avares://Vaulture.Desktop/Assets/gmail.png";
+            GoogleAccountName = profile.Name;
+            GoogleAccountEmail = profile.Email;
+            GoogleProfileImageUrl = profile.PictureUrl;
         }
         catch (System.Exception ex)
         {

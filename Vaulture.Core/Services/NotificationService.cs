@@ -24,20 +24,33 @@ public static class NotificationService
     {
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         string credPath = Path.Combine(appData, "Vaulture", "Google.Apis.Auth");
+        string secretsPath = Path.Combine(appData, "Vaulture", "client_secrets.json");
 
-        var secrets = new ClientSecrets
+        if (File.Exists(secretsPath))
         {
-            ClientId = ClientId,
-            ClientSecret = ClientSecret
-        };
+            using var stream = new FileStream(secretsPath, FileMode.Open, FileAccess.Read);
+            return await GoogleWebAuthorizationBroker.AuthorizeAsync(
+                GoogleClientSecrets.FromStream(stream).Secrets,
+                Scopes,
+                "user",
+                CancellationToken.None,
+                new FileDataStore(credPath, true));
+        }
+        else
+        {
+            var secrets = new ClientSecrets
+            {
+                ClientId = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
+                ClientSecret = "YOUR_GOOGLE_CLIENT_SECRET"
+            };
 
-        // Note: For a real local app, ClientId must be a real Desktop Client ID
-        return await GoogleWebAuthorizationBroker.AuthorizeAsync(
-            secrets,
-            Scopes,
-            "user",
-            CancellationToken.None,
-            new FileDataStore(credPath, true));
+            return await GoogleWebAuthorizationBroker.AuthorizeAsync(
+                secrets,
+                Scopes,
+                "user",
+                CancellationToken.None,
+                new FileDataStore(credPath, true));
+        }
     }
 
     public static async Task SendNotificationAsync(string subject, string body)
@@ -47,8 +60,11 @@ public static class NotificationService
             string machineName = Environment.MachineName;
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             string fullBody = $"{body}\n\n---\nSecurity Metadata:\nTime: {timestamp}\nDevice: {machineName}";
+            
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string secretsPath = Path.Combine(appData, "Vaulture", "client_secrets.json");
 
-            if (ClientId == "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com")
+            if (!File.Exists(secretsPath))
             {
                 Console.WriteLine("----------------------------------------");
                 Console.WriteLine($"[SIMULATED EMAIL TO SELF]");
@@ -94,5 +110,29 @@ public static class NotificationService
             Console.WriteLine($"Failed to send notification: {ex.Message}");
             // Fail silently so it doesn't crash the app if offline
         }
+    }
+
+    public static async Task<(string Name, string Email, string PictureUrl)> GetGoogleProfileAsync()
+    {
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string secretsPath = Path.Combine(appData, "Vaulture", "client_secrets.json");
+
+        if (!File.Exists(secretsPath))
+        {
+            return ("John Doe", "john.doe@gmail.com", "avares://Vaulture.Desktop/Assets/gmail.png");
+        }
+
+        var credential = await AuthenticateAsync();
+        var service = new GmailService(new BaseClientService.Initializer
+        {
+            HttpClientInitializer = credential,
+            ApplicationName = "Vaulture"
+        });
+
+        // Use the Google+ / People API or just basic profile info
+        // To keep it simple without adding more APIs, we'll just return the email as the name,
+        // unless we extract the name from another Google API. For now, email is good.
+        var profile = await service.Users.GetProfile("me").ExecuteAsync();
+        return (profile.EmailAddress.Split('@')[0], profile.EmailAddress, "avares://Vaulture.Desktop/Assets/gmail.png"); // No picture available via basic Gmail scope
     }
 }
