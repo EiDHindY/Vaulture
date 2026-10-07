@@ -16,7 +16,7 @@
                         <TextBlock Text="Vaulture is an offline-first app, but you can link your Google Account to enable two powerful features:" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         
                         <Grid ColumnDefinitions="Auto, *">
-                            <Image Grid.Column="0" Source="avares://Vaulture.Desktop/Assets/gmail.png" Width="32" Height="32" Margin="0,0,15,0" VerticalAlignment="Center" />
+                            <Image Grid.Column="0" Source="avares://Vaulture.Desktop/Assets/gmail.png" Width="36" Height="36" Margin="0,0,15,0" VerticalAlignment="Center" Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock Text="Email Security Alerts" FontWeight="Bold" />
                                 <TextBlock Text="Get notified via Gmail (and mobile push) whenever your vault is unlocked or your password is changed." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
@@ -24,7 +24,7 @@
                         </Grid>
                         
                         <Grid ColumnDefinitions="Auto, *">
-                            <Image Grid.Column="0" Source="avares://Vaulture.Desktop/Assets/drive.png" Width="32" Height="32" Margin="0,0,15,0" VerticalAlignment="Center" />
+                            <Image Grid.Column="0" Source="avares://Vaulture.Desktop/Assets/drive.png" Width="36" Height="36" Margin="0,0,15,0" VerticalAlignment="Center" Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock Text="Google Drive Sync" FontWeight="Bold" />
                                 <TextBlock Text="Securely back up your encrypted vault database to your personal Google Drive." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
