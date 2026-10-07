@@ -19,11 +19,85 @@ public partial class DashboardViewModel : ViewModelBase
     [ObservableProperty]
     public partial ObservableCollection<Entry> CurrentEntries { get; set; } = new();
 
+    // Settings state
+    [ObservableProperty]
+    public partial bool IsSettingsVisible { get; set; } = false;
+
+    [ObservableProperty]
+    public partial bool IsSettingsSuccessVisible { get; set; } = false;
+
+    [ObservableProperty]
+    public partial string NewMasterPassword { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string NewRecoveryKey { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string SettingsErrorMessage { get; set; } = string.Empty;
+
     public DashboardViewModel(MainViewModel mainViewModel, VaultDbContext dbContext)
     {
         _mainViewModel = mainViewModel;
         _dbContext = dbContext;
         LoadData();
+    }
+
+    [RelayCommand]
+    private void ShowSettings()
+    {
+        IsSettingsVisible = true;
+        SettingsErrorMessage = "";
+        NewMasterPassword = "";
+        GenerateNewMasterPassword(); // Auto-generate a strong one to encourage good habits
+    }
+
+    [RelayCommand]
+    private void HideSettings()
+    {
+        IsSettingsVisible = false;
+        IsSettingsSuccessVisible = false;
+    }
+
+    [RelayCommand]
+    private void GenerateNewMasterPassword()
+    {
+        const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_-+=";
+        var random = new System.Random();
+        var pass = new char[20];
+        for (int i = 0; i < pass.Length; i++) pass[i] = chars[random.Next(chars.Length)];
+        NewMasterPassword = new string(pass);
+    }
+
+    [RelayCommand]
+    private void ApplyNewMasterPassword()
+    {
+        if (string.IsNullOrWhiteSpace(NewMasterPassword))
+        {
+            SettingsErrorMessage = "Password cannot be empty.";
+            return;
+        }
+
+        try
+        {
+            // 1. Re-key the database using PRAGMA rekey
+            string newKey = Vaulture.Core.Services.EncryptionService.DeriveKeyFromPassword(NewMasterPassword);
+            _dbContext.Database.ExecuteSqlRaw($"PRAGMA rekey = '{newKey}';");
+
+            // 2. Generate a new Emergency Recovery Key
+            string appData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData);
+            string recoveryPath = System.IO.Path.Combine(appData, "Vaulture", "recovery.dat");
+
+            NewRecoveryKey = Vaulture.Core.Services.EncryptionService.GenerateRecoveryKey();
+            Vaulture.Core.Services.EncryptionService.CreateRecoveryFile(NewMasterPassword, NewRecoveryKey, recoveryPath);
+
+            // 3. Show Success Screen
+            IsSettingsVisible = false;
+            IsSettingsSuccessVisible = true;
+        }
+        catch (System.Exception ex)
+        {
+            SettingsErrorMessage = "Failed to change password: " + ex.Message;
+        }
     }
 
     [RelayCommand]

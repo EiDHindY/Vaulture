@@ -8,68 +8,124 @@
              x:Class="Vaulture.Desktop.Views.DashboardView"
              x:DataType="vm:DashboardViewModel">
     
-    <Grid ColumnDefinitions="250, *, 300" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
-        <!-- LEFT SIDEBAR: Folders -->
-        <Border Grid.Column="0" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
-            <Grid RowDefinitions="Auto, *">
-                <!-- Header -->
-                <Border Grid.Row="0" Padding="15">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <TextBlock Text="📁" FontSize="20" />
-                        <TextBlock Text="My Vault" FontWeight="SemiBold" FontSize="16" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Border>
+    <Grid>
+        <!-- MAIN DASHBOARD CONTENT -->
+        <Grid ColumnDefinitions="250, *, 300" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+            <!-- LEFT SIDEBAR: Folders -->
+            <Border Grid.Column="0" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="Auto, *, Auto">
+                    <!-- Header -->
+                    <Border Grid.Row="0" Padding="15">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="📁" FontSize="20" />
+                            <TextBlock Text="My Vault" FontWeight="SemiBold" FontSize="16" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
 
-                <!-- Folder TreeView -->
-                <TreeView Grid.Row="1" ItemsSource="{Binding Folders}" Margin="10,0">
-                    <TreeView.ItemTemplate>
-                        <TreeDataTemplate ItemsSource="{Binding SubFolders}">
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <TextBlock Text="📁" FontSize="16" />
-                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </TreeDataTemplate>
-                    </TreeView.ItemTemplate>
-                </TreeView>
-            </Grid>
-        </Border>
-
-        <!-- CENTER: Entry List -->
-        <Grid Grid.Column="1" RowDefinitions="Auto, *">
-            <Border Grid.Row="0" Padding="15" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
-                <Grid ColumnDefinitions="*, Auto">
-                    <TextBox Grid.Column="0" Watermark="Search entries..." Classes="clearButton" />
-                    <Button Grid.Column="1" Content="Add Entry" Command="{Binding AddDummyEntryCommand}" Classes="accent" Margin="10,0,0,0" />
+                    <!-- Folder TreeView -->
+                    <TreeView Grid.Row="1" ItemsSource="{Binding Folders}" Margin="10,0">
+                        <TreeView.ItemTemplate>
+                            <TreeDataTemplate ItemsSource="{Binding SubFolders}">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <TextBlock Text="📁" FontSize="16" />
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </TreeDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+                    
+                    <!-- Settings Button -->
+                    <Border Grid.Row="2" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                        <Button Content="⚙️ Settings" Command="{Binding ShowSettingsCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent" Padding="15" />
+                    </Border>
                 </Grid>
             </Border>
 
-            <ListBox Grid.Row="1" ItemsSource="{Binding CurrentEntries}" Margin="10">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Grid ColumnDefinitions="Auto, *" Margin="5">
-                            <TextBlock Grid.Column="0" Text="🔑" FontSize="24" Margin="0,0,15,0" />
-                            <StackPanel Grid.Column="1">
-                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                                <TextBlock Text="{Binding Username}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            </StackPanel>
-                        </Grid>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+            <!-- CENTER: Entry List -->
+            <Grid Grid.Column="1" RowDefinitions="Auto, *">
+                <Border Grid.Row="0" Padding="15" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <TextBox Grid.Column="0" PlaceholderText="Search entries..." Classes="clearButton" />
+                        <Button Grid.Column="1" Content="Add Entry" Command="{Binding AddDummyEntryCommand}" Classes="accent" Margin="10,0,0,0" />
+                    </Grid>
+                </Border>
+
+                <ListBox Grid.Row="1" ItemsSource="{Binding CurrentEntries}" Margin="10">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="Auto, *" Margin="5">
+                                <TextBlock Grid.Column="0" Text="🔑" FontSize="24" Margin="0,0,15,0" />
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Username}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+
+            <!-- RIGHT: Detail Panel -->
+            <Border Grid.Column="2" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="1,0,0,0">
+                <Border Padding="20">
+                    <StackPanel Spacing="15">
+                        <!-- Lock Button -->
+                        <Button Content="Lock Vault" Command="{Binding LockVaultCommand}" HorizontalAlignment="Right" />
+
+                        <TextBlock Text="Entry Details" FontWeight="SemiBold" FontSize="18" Margin="0,20,0,10" />
+                        <TextBlock Text="Select an entry to view its details." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Border>
         </Grid>
-
-        <!-- RIGHT: Detail Panel -->
-        <Border Grid.Column="2" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="1,0,0,0">
-            <Border Padding="20">
-                <StackPanel Spacing="15">
-                    <!-- Lock Button -->
-                    <Button Content="Lock Vault" Command="{Binding LockVaultCommand}" HorizontalAlignment="Right" />
-
-                <TextBlock Text="Entry Details" FontWeight="SemiBold" FontSize="18" Margin="0,20,0,10" />
-                
-                <TextBlock Text="Select an entry to view its details." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+        
+        <!-- SETTINGS OVERLAY -->
+        <Grid Background="#CC000000" IsVisible="{Binding IsSettingsVisible}">
+            <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" CornerRadius="12" Padding="30" HorizontalAlignment="Center" VerticalAlignment="Center" Width="450" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
+                <StackPanel Spacing="20">
+                    <TextBlock Text="Change Master Password" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource AccentFillColorDefaultBrush}" />
+                    
+                    <TextBlock Text="{Binding SettingsErrorMessage}" Foreground="Red" TextWrapping="Wrap" HorizontalAlignment="Center" IsVisible="{Binding SettingsErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    
+                    <TextBlock Text="Changing your Master Password will instantly re-encrypt your entire vault database. This action cannot be undone." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    
+                    <TextBox Text="{Binding NewMasterPassword}" PasswordChar="•" PlaceholderText="New Master Password" Classes="revealPasswordButton" Margin="0,10,0,0" />
+                    
+                    <Button Content="Generate Strong Password" Command="{Binding GenerateNewMasterPasswordCommand}" HorizontalAlignment="Right" Background="Transparent" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,0,0,10" />
+                    
+                    <TextBlock Text="WARNING: Changing your password will invalidate your old Emergency Recovery Key. You will be issued a new one." TextWrapping="Wrap" Foreground="Red" FontWeight="Bold" />
+                    
+                    <Grid ColumnDefinitions="*, *" Margin="0,10,0,0">
+                        <Button Grid.Column="0" Content="Cancel" Command="{Binding HideSettingsCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="Transparent" Margin="0,0,5,0" />
+                        <Button Grid.Column="1" Content="Apply New Password" Command="{Binding ApplyNewMasterPasswordCommand}" Classes="accent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="5,0,0,0" FontWeight="Bold" />
+                    </Grid>
                 </StackPanel>
             </Border>
-        </Border>
+        </Grid>
+        
+        <!-- SETTINGS SUCCESS OVERLAY -->
+        <Grid Background="#CC000000" IsVisible="{Binding IsSettingsSuccessVisible}">
+            <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" CornerRadius="12" Padding="30" HorizontalAlignment="Center" VerticalAlignment="Center" Width="500" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
+                <StackPanel Spacing="20">
+                    <TextBlock Text="PASSWORD CHANGED SUCCESSFULLY" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource AccentFillColorDefaultBrush}" />
+                    
+                    <TextBlock Text="Your vault has been securely re-encrypted with your new Master Password. Please copy and save your NEW Emergency Recovery Key below. Your old recovery key will no longer work." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    
+                    <Grid ColumnDefinitions="*, Auto" Margin="0,10">
+                        <Border Grid.Column="0" Background="#10FFFFFF" BorderBrush="Red" BorderThickness="1" CornerRadius="8,0,0,8" Padding="15">
+                            <SelectableTextBlock Text="{Binding NewRecoveryKey}" FontSize="24" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Red" />
+                        </Border>
+                        <Button Grid.Column="1" CommandParameter="{Binding NewRecoveryKey}" Click="CopyKey_Click" CornerRadius="0,8,8,0" Background="#33FF0000" Foreground="White" FontWeight="Bold" Cursor="Hand" VerticalAlignment="Stretch" VerticalContentAlignment="Center" Padding="20,0">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" Width="14" Height="14" Foreground="White" />
+                                <TextBlock Text="Copy" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    
+                    <Button Content="I have safely stored my NEW Recovery Key" Command="{Binding HideSettingsCommand}" Classes="accent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Cursor="Hand" Padding="15" FontWeight="Bold" Margin="0,10,0,0" />
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>
