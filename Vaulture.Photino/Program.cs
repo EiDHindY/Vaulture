@@ -64,9 +64,15 @@ namespace Vaulture.Photino
                 Console.WriteLine($"[Vaulture] Connected to Vite development server: {devUrl}");
             }
 
-            string iconPath = Path.Combine(AppContext.BaseDirectory, "Vaulture.ico");
-            if (!File.Exists(iconPath)) iconPath = Path.Combine(Directory.GetCurrentDirectory(), "Vaulture.ico");
-            if (!File.Exists(iconPath)) iconPath = Path.Combine(Directory.GetCurrentDirectory(), "Vaulture.Photino", "Vaulture.ico");
+            string preferredIcon = OperatingSystem.IsWindows() ? "Vaulture.ico" : "Vaulture.png";
+            string fallbackIcon = OperatingSystem.IsWindows() ? "Vaulture.png" : "Vaulture.ico";
+
+            string iconPath = Path.Combine(AppContext.BaseDirectory, preferredIcon);
+            if (!File.Exists(iconPath)) iconPath = Path.Combine(AppContext.BaseDirectory, fallbackIcon);
+            if (!File.Exists(iconPath)) iconPath = Path.Combine(Directory.GetCurrentDirectory(), preferredIcon);
+            if (!File.Exists(iconPath)) iconPath = Path.Combine(Directory.GetCurrentDirectory(), fallbackIcon);
+            if (!File.Exists(iconPath)) iconPath = Path.Combine(Directory.GetCurrentDirectory(), "Vaulture.Photino", preferredIcon);
+            if (!File.Exists(iconPath)) iconPath = Path.Combine(Directory.GetCurrentDirectory(), "Vaulture.Photino", fallbackIcon);
 
             var window = new PhotinoWindow()
                 .SetTitle(windowTitle)

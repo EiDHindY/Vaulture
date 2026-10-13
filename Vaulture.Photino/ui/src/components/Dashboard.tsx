@@ -38,6 +38,7 @@ import { VaultIcon } from '../utils/iconRegistry';
 import { IconPickerModal } from './IconPickerModal';
 import { VaultBreadcrumbs, BreadcrumbNode } from './VaultBreadcrumbs';
 import { ParentChildHierarchy } from './ParentChildHierarchy';
+import logoUrl from '../assets/logo.png';
 
 interface DashboardProps {
   onLock: () => void;
@@ -1638,7 +1639,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
           {/* Brand */}
           <div className="p-4 border-b border-neutral-800 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <img src="/logo.png" alt="Vaulture" className="w-8 h-8 object-contain" />
+              <img src={logoUrl} alt="Vaulture" className="w-8 h-8 object-contain" />
               <span className="font-bold text-lg text-white">Vaulture</span>
             </div>
             <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">

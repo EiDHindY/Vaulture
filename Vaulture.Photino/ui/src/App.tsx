@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   Loader2
 } from 'lucide-react'
+import logoUrl from './assets/logo.png'
 import { Dashboard } from './components/Dashboard'
 
 const GoogleIcon = () => (
@@ -397,7 +398,7 @@ function App() {
         )}
 
         <div className="flex flex-col items-center mb-4">
-          <img src="/logo.png" alt="Vaulture Logo" className="w-20 h-20 mb-3 object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]" />
+          <img src={logoUrl} alt="Vaulture Logo" className="w-20 h-20 mb-3 object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]" />
           <h1 className="text-3xl font-bold tracking-tight text-white">Vaulture</h1>
           {mode === 'login' && <p className="text-neutral-400 mt-1 text-sm text-center">Enter your master password</p>}
 
