@@ -7,6 +7,7 @@ public class Folder
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    public string? Icon { get; set; }
 
     // Self-referencing relationship for infinite nesting
     public int? ParentFolderId { get; set; }

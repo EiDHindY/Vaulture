@@ -16,6 +16,7 @@ public class Entry
     public string Password { get; set; } = string.Empty;
     public string Url { get; set; } = string.Empty;
     public string Notes { get; set; } = string.Empty;
+    public string? Icon { get; set; }
 
     public List<CustomField> CustomFields { get; set; } = new();
     public List<PasswordHistory> PasswordHistories { get; set; } = new();

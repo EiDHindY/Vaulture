@@ -1,4 +1,11 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="README.md" />
+  </Folder>
   <Project Path="Vaulture.Core/Vaulture.Core.csproj" />
-  <Project Path="Vaulture.Desktop/Vaulture.Desktop.csproj" />
+  <Project Path="Vaulture.Photino/Vaulture.Photino.csproj" />
 </Solution>
