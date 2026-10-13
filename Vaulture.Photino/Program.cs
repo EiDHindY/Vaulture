@@ -31,14 +31,55 @@ namespace Vaulture.Photino
             Directory.CreateDirectory(VaultDir);
 
             string windowTitle = "Vaulture";
-            string url = "http://localhost:5173";
+            string devUrl = "http://localhost:5173";
+            
+            // Check possible locations for the compiled production bundle
+            string distFile = Path.Combine(AppContext.BaseDirectory, "ui", "dist", "index.html");
+            if (!File.Exists(distFile))
+            {
+                distFile = Path.Combine(Directory.GetCurrentDirectory(), "ui", "dist", "index.html");
+            }
+            if (!File.Exists(distFile))
+            {
+                distFile = Path.Combine(Directory.GetCurrentDirectory(), "Vaulture.Photino", "ui", "dist", "index.html");
+            }
+
+            string targetUrl = devUrl;
+            bool isDevServerRunning = false;
+            try
+            {
+                using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMilliseconds(400) };
+                var res = http.GetAsync(devUrl).GetAwaiter().GetResult();
+                isDevServerRunning = res.IsSuccessStatusCode;
+            }
+            catch { }
+
+            if (!isDevServerRunning && File.Exists(distFile))
+            {
+                targetUrl = distFile;
+                Console.WriteLine($"[Vaulture] Running in standalone production mode: {targetUrl}");
+            }
+            else
+            {
+                Console.WriteLine($"[Vaulture] Connected to Vite development server: {devUrl}");
+            }
+
+            string iconPath = Path.Combine(AppContext.BaseDirectory, "Vaulture.ico");
+            if (!File.Exists(iconPath)) iconPath = Path.Combine(Directory.GetCurrentDirectory(), "Vaulture.ico");
+            if (!File.Exists(iconPath)) iconPath = Path.Combine(Directory.GetCurrentDirectory(), "Vaulture.Photino", "Vaulture.ico");
 
             var window = new PhotinoWindow()
                 .SetTitle(windowTitle)
                 .SetUseOsDefaultSize(false)
                 .SetSize(new System.Drawing.Size(1024, 768))
-                .Center()
-                .Load(url);
+                .Center();
+
+            if (File.Exists(iconPath))
+            {
+                try { window.SetIconFile(iconPath); } catch { }
+            }
+
+            window.Load(targetUrl);
 
             window.RegisterWebMessageReceivedHandler((object? sender, string message) =>
             {
@@ -94,9 +135,9 @@ namespace Vaulture.Photino
                                 _ = Task.Run(async () =>
                                 {
                                     await NotificationService.SendNotificationAsync(
-                                        "Workspace Session Started",
+                                        "Vault Unlocked",
                                         "Your local Vaulture workspace was opened on this device.",
-                                        "#2da44e",
+                                        "#10b981",
                                         ""
                                     );
                                 });
@@ -194,6 +235,7 @@ namespace Vaulture.Photino
                         }
                         catch (Exception ex)
                         {
+                            Console.WriteLine($"Recovery failed: {ex.Message}");
                             w.SendWebMessage(JsonSerializer.Serialize(new {
                                 type = "RECOVER_RESULT",
                                 payload = new { success = false, error = "Invalid Recovery Key." }

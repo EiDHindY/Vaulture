@@ -186,6 +186,8 @@ namespace Vaulture.Core.Services
                 if (user == null || string.IsNullOrEmpty(user.Id)) return false;
 
                 byte[] data = await File.ReadAllBytesAsync(dbFilePath);
+                if (Client == null) await InitializeAsync();
+                if (Client == null) return false;
                 var storage = Client.Storage.From("vault-backups");
                 await storage.Upload(data, $"{user.Id}/vault.db", new Supabase.Storage.FileOptions { Upsert = true });
                 return true;
@@ -204,6 +206,8 @@ namespace Vaulture.Core.Services
                 var user = Client?.Auth?.CurrentUser ?? new DiskSessionHandler().LoadSession()?.User;
                 if (user == null || string.IsNullOrEmpty(user.Id)) return null;
 
+                if (Client == null) await InitializeAsync();
+                if (Client == null) return null;
                 var storage = Client.Storage.From("vault-backups");
                 return await storage.Download($"{user.Id}/vault.db", (Supabase.Storage.TransformOptions?)null);
             }
