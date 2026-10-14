@@ -58,6 +58,10 @@ const generateRecoveryKey = () => {
 
 function App() {
   const [mode, setMode] = useState<'loading' | 'welcome' | 'login' | 'dashboard' | 'setup' | 'restore' | 'recover'>('loading')
+  const modeRef = useRef(mode)
+  useEffect(() => {
+    modeRef.current = mode
+  }, [mode])
   const [vaultExists, setVaultExists] = useState(false)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -138,7 +142,7 @@ function App() {
             if (data.payload.success) {
               setGoogleSuccess(data.payload.email || 'Account connected');
               setGoogleError('');
-              if (mode === 'restore') {
+              if (modeRef.current === 'restore') {
                 // @ts-ignore
                 if (window.external?.sendMessage) {
                   // @ts-ignore

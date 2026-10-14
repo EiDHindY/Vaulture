@@ -54,7 +54,11 @@ namespace Vaulture.Core.Services
             var signInOptions = new SignInOptions
             {
                 RedirectTo = redirectUri,
-                FlowType = Supabase.Gotrue.Constants.OAuthFlowType.PKCE
+                FlowType = Supabase.Gotrue.Constants.OAuthFlowType.PKCE,
+                QueryParams = new Dictionary<string, string>
+                {
+                    { "prompt", "select_account" }
+                }
             };
 
             var providerState = await Client.Auth.SignIn(Supabase.Gotrue.Constants.Provider.Google, signInOptions);
