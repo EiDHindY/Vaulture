@@ -483,3 +483,15 @@ $RECYCLE.BIN/
 
 # Sensitive local configurations
 docs/supabase_config.md
+
+# Temporary scratch files and scripts in root
+/*.png
+/*.txt
+/*.cs
+/*.csproj
+/*.py
+/*.sh
+!build-distribution.sh
+TestDir/
+.vscode/
+

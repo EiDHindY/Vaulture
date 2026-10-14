@@ -56,6 +56,12 @@ const generateRecoveryKey = () => {
   return parts.join('-');
 }
 
+interface LinkedAccount {
+  name: string;
+  email: string;
+  picture: string;
+}
+
 function App() {
   const [mode, setMode] = useState<'loading' | 'welcome' | 'login' | 'dashboard' | 'setup' | 'restore' | 'recover'>('loading')
   const modeRef = useRef(mode)
@@ -63,6 +69,7 @@ function App() {
     modeRef.current = mode
   }, [mode])
   const [vaultExists, setVaultExists] = useState(false)
+  const [linkedAccount, setLinkedAccount] = useState<LinkedAccount | null>(null)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isUnlocking, setIsUnlocking] = useState(false)
@@ -77,6 +84,7 @@ function App() {
   const [copiedPass, setCopiedPass] = useState(false)
   const [copiedKey, setCopiedKey] = useState(false)
   const [savedKey, setSavedKey] = useState(false)
+  const [isCreatingVault, setIsCreatingVault] = useState(false)
 
   // Recovery State
   const [recoveryKeyInput, setRecoveryKeyInput] = useState('')
@@ -90,10 +98,19 @@ function App() {
   const [googleSuccess, setGoogleSuccess] = useState<string | null>(null)
   const [authUrl, setAuthUrl] = useState<string | null>(null)
 
+  // Restore Flow State
+  const [restoreStep, setRestoreStep] = useState<'auth' | 'verify'>('auth')
+  const [restorePassword, setRestorePassword] = useState('')
+  const [restoreError, setRestoreError] = useState('')
+  const [restoreVerifying, setRestoreVerifying] = useState(false)
+  const [restoreUser, setRestoreUser] = useState<LinkedAccount | null>(null)
+  const [restoreBackupDate, setRestoreBackupDate] = useState<string>('')
+
   // Modals
   const [showPassModal, setShowPassModal] = useState(false)
   const [showKeyModal, setShowKeyModal] = useState(false)
   const [showWipeModal, setShowWipeModal] = useState(false)
+  const [showReplaceModal, setShowReplaceModal] = useState<null | 'create' | 'restore'>(null)
 
   const mounted = useRef(false)
 
@@ -110,6 +127,11 @@ function App() {
           if (data.type === 'INIT') {
             const exists = !!data.payload?.vaultExists;
             setVaultExists(exists);
+            if (data.payload?.linkedAccount) {
+              setLinkedAccount(data.payload.linkedAccount);
+            } else {
+              setLinkedAccount(null);
+            }
             setMode(exists ? 'login' : 'welcome');
           } else if (data.type === 'LOGIN_RESULT') {
             const elapsed = performance.now() - unlockStartTimeRef.current;
@@ -129,10 +151,12 @@ function App() {
               }
             }, remainingWait);
           } else if (data.type === 'CREATE_VAULT_RESULT') {
+            setIsCreatingVault(false);
             if (data.payload.success) {
               setVaultExists(true);
             } else {
               setError(data.payload.error || 'Failed to create vault.');
+              setGoogleError(data.payload.error || 'Failed to initialize vault.');
             }
           } else if (data.type === 'GOOGLE_AUTH_URL') {
             setAuthUrl(data.payload.url);
@@ -140,6 +164,12 @@ function App() {
             setGoogleLoading(false);
             setAuthUrl(null);
             if (data.payload.success) {
+              const acc = {
+                name: data.payload.name || '',
+                email: data.payload.email || '',
+                picture: data.payload.picture || ''
+              };
+              setLinkedAccount(acc);
               setGoogleSuccess(data.payload.email || 'Account connected');
               setGoogleError('');
               if (modeRef.current === 'restore') {
@@ -160,16 +190,35 @@ function App() {
           } else if (data.type === 'RESTORE_VAULT_BACKUP_RESULT') {
             if (data.payload.success) {
               setVaultExists(true);
-              setError('');
-              setGoogleSuccess('Backup downloaded successfully! Please unlock your vault.');
-              setTimeout(() => {
-                setMode('login');
-              }, 1200);
+              if (data.payload.user) {
+                setRestoreUser(data.payload.user);
+                setLinkedAccount(data.payload.user);
+              }
+              setRestoreBackupDate(data.payload.backupDate || 'Recent');
+              setRestoreStep('verify');
+              setRestorePassword('');
+              setRestoreError('');
             } else {
+              setGoogleLoading(false);
               setGoogleError(data.payload.error || 'Failed to download cloud backup.');
+            }
+          } else if (data.type === 'VERIFY_RESTORE_PASSWORD_RESULT') {
+            setRestoreVerifying(false);
+            if (data.payload.success) {
+              if (data.payload.linkedAccount) {
+                setLinkedAccount(data.payload.linkedAccount);
+              }
+              setMode('dashboard');
+            } else {
+              setRestoreError(data.payload.error || 'Incorrect master password for this backup.');
             }
           } else if (data.type === 'LOCK_RESULT') {
             setPassword('');
+            if (data.payload?.linkedAccount) {
+              setLinkedAccount(data.payload.linkedAccount);
+            } else {
+              setLinkedAccount(null);
+            }
             setMode('login');
           } else if (data.type === 'RECOVER_RESULT') {
             if (data.payload.success) {
@@ -183,6 +232,7 @@ function App() {
               setVaultExists(false);
               setPassword('');
               setRecoveredPassword('');
+              setLinkedAccount(null);
               setShowWipeModal(false);
               setMode('welcome');
             } else {
@@ -234,32 +284,62 @@ function App() {
     setRecoveryKey(generateRecoveryKey());
     setCopiedKey(false);
     setSavedKey(false);
+    setIsCreatingVault(false);
     setGoogleLoading(false);
     setGoogleError('');
     setGoogleSuccess(null);
     setMode('setup');
   }
 
+  const handleStartRestore = () => {
+    setRestoreStep('auth');
+    setRestorePassword('');
+    setRestoreError('');
+    setGoogleLoading(false);
+    setGoogleError('');
+    setGoogleSuccess(null);
+    setAuthUrl(null);
+    // @ts-ignore
+    if (window.external?.sendMessage) {
+      // @ts-ignore
+      window.external.sendMessage(JSON.stringify({ type: 'START_RESTORE' }));
+    }
+    setMode('restore');
+  };
+
+  const handleProceedReplace = () => {
+    const target = showReplaceModal;
+    setShowReplaceModal(null);
+    if (target === 'create') {
+      handleStartSetup();
+    } else if (target === 'restore') {
+      handleStartRestore();
+    }
+  };
+
+  const handleVerifyRestore = (e: FormEvent) => {
+    e.preventDefault();
+    setRestoreError('');
+    if (!restorePassword) {
+      setRestoreError('Please enter your master password.');
+      return;
+    }
+    setRestoreVerifying(true);
+    // @ts-ignore
+    if (window.external?.sendMessage) {
+      // @ts-ignore
+      window.external.sendMessage(JSON.stringify({
+        type: 'VERIFY_RESTORE_PASSWORD',
+        payload: { password: restorePassword }
+      }));
+    }
+  };
+
   const handleGoogleSignIn = () => {
     setGoogleLoading(true);
     setGoogleError('');
     setGoogleSuccess(null);
     setAuthUrl(null);
-
-    // If in setup mode, ensure vault is created first!
-    if (mode === 'setup') {
-      // @ts-ignore
-      if (window.external?.sendMessage) {
-        // @ts-ignore
-        window.external.sendMessage(JSON.stringify({
-          type: 'CREATE_VAULT',
-          payload: {
-            password: newPassword,
-            recoveryKey: recoveryKey
-          }
-        }));
-      }
-    }
 
     // Trigger Google Sign In via C#
     // @ts-ignore
@@ -385,7 +465,27 @@ function App() {
             </p>
             <div className="flex gap-3">
               <button onClick={() => setShowKeyModal(false)} className="flex-1 py-3 bg-neutral-800 hover:bg-neutral-700 rounded-xl font-semibold transition-colors cursor-pointer">Go Back</button>
-              <button onClick={() => { setShowKeyModal(false); setSetupStep(3); }} className="flex-1 py-3 bg-red-500 hover:bg-red-600 rounded-xl font-semibold transition-colors text-white cursor-pointer">I Have It</button>
+              <button 
+                onClick={() => { 
+                  setShowKeyModal(false); 
+                  setSetupStep(3); 
+                  setIsCreatingVault(true);
+                  // @ts-ignore
+                  if (window.external?.sendMessage) {
+                    // @ts-ignore
+                    window.external.sendMessage(JSON.stringify({
+                      type: 'CREATE_VAULT',
+                      payload: {
+                        password: newPassword,
+                        recoveryKey: recoveryKey
+                      }
+                    }));
+                  }
+                }} 
+                className="flex-1 py-3 bg-red-500 hover:bg-red-600 rounded-xl font-semibold transition-colors text-white cursor-pointer"
+              >
+                I Have It
+              </button>
             </div>
           </div>
         </div>
@@ -411,6 +511,36 @@ function App() {
         </div>
       )}
 
+      {/* Modal: Safe Vault Replacement Confirmation */}
+      {showReplaceModal && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-neutral-900 border border-amber-500/40 p-8 rounded-2xl max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex justify-center mb-4"><ShieldAlert size={48} className="text-amber-400" /></div>
+            <h3 className="text-xl font-bold text-center text-white mb-2">Replace Current Local Vault?</h3>
+            <p className="text-sm text-neutral-300 text-center mb-3 leading-relaxed">
+              A vault already exists on this computer.
+            </p>
+            <div className="bg-amber-950/40 border border-amber-800/40 p-3 rounded-xl mb-6 text-xs text-amber-200/90 text-left">
+              If your current local vault is connected to Google, it will be automatically backed up to the cloud first. Proceeding will replace the local files on this machine.
+            </div>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowReplaceModal(null)} 
+                className="flex-1 py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl font-semibold transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleProceedReplace} 
+                className="flex-1 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-semibold transition-colors cursor-pointer"
+              >
+                Proceed
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-md p-8 bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl relative">
         
         {/* Navigation Back button */}
@@ -422,6 +552,9 @@ function App() {
               setGoogleLoading(false);
               setGoogleError('');
               setAuthUrl(null);
+              setRestoreStep('auth');
+              setRestorePassword('');
+              setRestoreError('');
               // @ts-ignore
               if (window.external?.sendMessage) {
                 // @ts-ignore
@@ -436,9 +569,25 @@ function App() {
         )}
 
         <div className="flex flex-col items-center mb-4">
-          <img src={logoUrl} alt="Vaulture Logo" className="w-20 h-20 mb-3 object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]" />
+          <img src={logoUrl} alt="Vaulture Logo" className="w-20 h-20 mb-3 object-contain rounded-full drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]" />
           <h1 className="text-3xl font-bold tracking-tight text-white">Vaulture</h1>
           {mode === 'login' && <p className="text-neutral-400 mt-1 text-sm text-center">Enter your master password</p>}
+
+          {/* Linked Account Badge on Lock Screen */}
+          {mode === 'login' && linkedAccount && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-neutral-950/80 border border-neutral-800 rounded-full mt-2 shadow-inner">
+              {linkedAccount.picture ? (
+                <img src={linkedAccount.picture} alt="Avatar" className="w-4 h-4 rounded-full object-cover" />
+              ) : (
+                <div className="w-4 h-4 rounded-full bg-emerald-600 flex items-center justify-center text-[9px] font-bold text-white">
+                  {linkedAccount.name ? linkedAccount.name[0].toUpperCase() : 'V'}
+                </div>
+              )}
+              <span className="text-[11px] text-neutral-300 font-medium truncate max-w-[200px]">
+                {linkedAccount.email}
+              </span>
+            </div>
+          )}
 
           {/* Animated Lock -> Unlock Badge */}
           {mode === 'login' && (
@@ -507,22 +656,53 @@ function App() {
               )}
             </button>
 
-            <div className="flex flex-col items-center gap-3 pt-2 text-sm">
+            <div className="flex flex-col items-center gap-2.5 pt-2 text-sm">
               <button
                 type="button"
                 onClick={() => { setError(''); setMode('recover'); }}
-                className="text-neutral-400 hover:text-emerald-400 transition-colors cursor-pointer"
+                className="text-neutral-400 hover:text-emerald-400 transition-colors cursor-pointer text-xs"
               >
                 Forgot Master Password?
               </button>
 
-              <button
-                type="button"
-                onClick={() => { setError(''); setMode('welcome'); }}
-                className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
-              >
-                Switch to Create / Restore options
-              </button>
+              <div className="w-full flex items-center gap-3 my-1">
+                <div className="h-px bg-neutral-800 flex-1"></div>
+                <span className="text-[11px] text-neutral-500 uppercase tracking-wider">or</span>
+                <div className="h-px bg-neutral-800 flex-1"></div>
+              </div>
+
+              <div className="w-full flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError('');
+                    if (vaultExists) {
+                      setShowReplaceModal('restore');
+                    } else {
+                      handleStartRestore();
+                    }
+                  }}
+                  className="w-full py-2.5 px-3 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white rounded-xl text-xs font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <DownloadCloud size={14} className="text-emerald-400" />
+                  Restore a Vault from Cloud
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError('');
+                    if (vaultExists) {
+                      setShowReplaceModal('create');
+                    } else {
+                      handleStartSetup();
+                    }
+                  }}
+                  className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer text-center py-1"
+                >
+                  Need a new vault? Create one
+                </button>
+              </div>
             </div>
           </form>
         )}
@@ -540,7 +720,13 @@ function App() {
             )}
 
             <button
-              onClick={handleStartSetup}
+              onClick={() => {
+                if (vaultExists) {
+                  setShowReplaceModal('create');
+                } else {
+                  handleStartSetup();
+                }
+              }}
               className={`w-full py-4 px-4 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer ${
                 vaultExists
                   ? 'bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700'
@@ -552,11 +738,11 @@ function App() {
 
             <button
               onClick={() => {
-                setGoogleLoading(false);
-                setGoogleError('');
-                setGoogleSuccess(null);
-                setAuthUrl(null);
-                setMode('restore');
+                if (vaultExists) {
+                  setShowReplaceModal('restore');
+                } else {
+                  handleStartRestore();
+                }
               }}
               className="w-full py-4 px-4 bg-neutral-800 hover:bg-neutral-700 text-white font-semibold rounded-xl border border-neutral-700 transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
@@ -816,27 +1002,32 @@ function App() {
 
                 <button 
                   onClick={handleGoogleSignIn}
-                  disabled={googleLoading}
+                  disabled={googleLoading || isCreatingVault}
                   className="w-full py-4 px-4 bg-white hover:bg-gray-100 disabled:opacity-50 text-neutral-900 font-semibold rounded-xl shadow-md transition-colors flex items-center justify-center gap-3 cursor-pointer"
                 >
-                  <GoogleIcon /> {googleLoading ? 'Signing In...' : 'Sign in with Google'}
+                  <GoogleIcon /> {isCreatingVault ? 'Initializing Encrypted Vault...' : googleLoading ? 'Signing In...' : 'Sign in with Google'}
                 </button>
               </div>
             )}
           </div>
         )}
 
-        {mode === 'restore' && (
-          <div className="text-center space-y-4">
-            <h2 className="text-xl font-bold text-white">Restore Vault</h2>
-            <p className="text-neutral-400 text-sm mb-4">Sign in to Google to download your encrypted vault from Supabase.</p>
+        {mode === 'restore' && restoreStep === 'auth' && (
+          <div className="text-center space-y-4 animate-in fade-in duration-300">
+            <h2 className="text-xl font-bold text-white">Restore Vault from Cloud</h2>
+            <p className="text-neutral-400 text-sm mb-4">
+              Sign in with Google to download your encrypted vault from cloud storage.
+            </p>
 
             {googleSuccess ? (
               <div className="p-4 bg-emerald-950/40 border border-emerald-800/50 rounded-xl text-center space-y-2 animate-in zoom-in-95">
                 <CheckCircle size={32} className="text-emerald-400 mx-auto" />
                 <p className="text-sm font-semibold text-emerald-300">Google Account Connected!</p>
                 <p className="text-xs text-neutral-300">{googleSuccess}</p>
-                <p className="text-xs text-emerald-500 animate-pulse">Checking for backups...</p>
+                <div className="flex items-center justify-center gap-2 text-emerald-400 text-xs animate-pulse pt-1">
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Downloading encrypted vault from cloud...</span>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -849,14 +1040,11 @@ function App() {
                 {googleLoading && (
                   <div className="p-4 bg-blue-950/30 border border-blue-800/40 rounded-xl text-center space-y-2 animate-in fade-in">
                     <div className="flex items-center justify-center gap-2 text-blue-400 text-sm font-medium">
-                      <svg className="w-5 h-5 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
+                      <Loader2 size={18} className="animate-spin text-blue-400" />
                       Waiting for Google authorization...
                     </div>
                     <p className="text-xs text-neutral-400">
-                      A browser tab has been opened. Please complete the sign-in prompt.
+                      A browser tab has been opened. Please select your Google account.
                     </p>
                     {authUrl && (
                       <p className="text-xs text-neutral-300 pt-1">
@@ -891,6 +1079,98 @@ function App() {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {mode === 'restore' && restoreStep === 'verify' && (
+          <div className="space-y-5 animate-in fade-in duration-300">
+            <div className="text-center">
+              <h2 className="text-xl font-bold text-white mb-1">Verify Master Password</h2>
+              <p className="text-xs text-neutral-400">
+                Your encrypted vault was successfully downloaded. Enter its Master Password to decrypt and open it.
+              </p>
+            </div>
+
+            {/* Restored Account Badge */}
+            {restoreUser && (
+              <div className="p-3.5 bg-neutral-950 border border-neutral-800 rounded-xl flex items-center gap-3">
+                {restoreUser.picture ? (
+                  <img src={restoreUser.picture} alt="Avatar" className="w-10 h-10 rounded-full object-cover border border-neutral-700" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-sm font-bold text-white">
+                    {restoreUser.name ? restoreUser.name[0].toUpperCase() : 'V'}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="text-sm font-semibold text-white truncate">{restoreUser.name || 'Google User'}</div>
+                  <div className="text-xs text-neutral-400 truncate">{restoreUser.email}</div>
+                  {restoreBackupDate && (
+                    <div className="text-[11px] text-emerald-400/90 mt-0.5">
+                      Cloud Backup: {restoreBackupDate}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleVerifyRestore} className="space-y-4">
+              <div>
+                <input
+                  type="password"
+                  value={restorePassword}
+                  disabled={restoreVerifying}
+                  onChange={(e) => setRestorePassword(e.target.value)}
+                  placeholder="Master Password for this vault"
+                  className="w-full px-4 py-3 bg-neutral-950 border border-neutral-800 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all outline-none text-white placeholder-neutral-500 disabled:opacity-50"
+                  autoFocus
+                />
+                {restoreError && <p className="text-red-400 text-xs mt-2 text-left">{restoreError}</p>}
+              </div>
+
+              <button
+                type="submit"
+                disabled={restoreVerifying}
+                className="w-full py-3.5 px-4 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white font-semibold rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                {restoreVerifying ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin text-white" />
+                    <span>Verifying & Opening...</span>
+                  </>
+                ) : (
+                  <>
+                    <Unlock size={18} />
+                    <span>Unlock & Open Vault</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="flex flex-col items-center gap-2 pt-1 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setError('');
+                  setMode('recover');
+                }}
+                className="text-neutral-400 hover:text-emerald-400 transition-colors cursor-pointer"
+              >
+                Forgot Master Password? Recover with key
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setRestoreStep('auth');
+                  setRestorePassword('');
+                  setRestoreError('');
+                  handleStartRestore();
+                }}
+                className="text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
+              >
+                Sign in with a different Google account
+              </button>
+            </div>
           </div>
         )}
 

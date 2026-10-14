@@ -27,6 +27,19 @@ dotnet publish "$SCRIPT_DIR/Vaulture.Photino/Vaulture.Photino.csproj" \
 
 rm -f "$RELEASE_DIR/linux-x64"/*.pdb
 
+cat << 'EOF' > "$RELEASE_DIR/linux-x64/Vaulture.desktop"
+[Desktop Entry]
+Name=Vaulture
+Comment=Personal Encrypted Vault
+Exec=Vaulture
+Icon=Vaulture
+Terminal=false
+Type=Application
+Categories=Utility;Security;
+StartupWMClass=Vaulture
+EOF
+chmod +x "$RELEASE_DIR/linux-x64/Vaulture.desktop"
+
 echo "Creating Vaulture-linux-x64.tar.gz..."
 tar -czf "$RELEASE_DIR/Vaulture-linux-x64.tar.gz" -C "$RELEASE_DIR/linux-x64" .
 

@@ -26,6 +26,12 @@ namespace Vaulture.Photino
             if (OperatingSystem.IsLinux())
             {
                 Environment.SetEnvironmentVariable("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+                try
+                {
+                    GlibNative.g_set_prgname("Vaulture");
+                    GlibNative.g_set_application_name("Vaulture");
+                }
+                catch { }
             }
 
             Directory.CreateDirectory(VaultDir);
@@ -71,8 +77,10 @@ namespace Vaulture.Photino
             if (!File.Exists(iconPath)) iconPath = Path.Combine(AppContext.BaseDirectory, fallbackIcon);
             if (!File.Exists(iconPath)) iconPath = Path.Combine(Directory.GetCurrentDirectory(), preferredIcon);
             if (!File.Exists(iconPath)) iconPath = Path.Combine(Directory.GetCurrentDirectory(), fallbackIcon);
-            if (!File.Exists(iconPath)) iconPath = Path.Combine(Directory.GetCurrentDirectory(), "Vaulture.Photino", preferredIcon);
-            if (!File.Exists(iconPath)) iconPath = Path.Combine(Directory.GetCurrentDirectory(), "Vaulture.Photino", fallbackIcon);
+            if (OperatingSystem.IsLinux() && File.Exists(iconPath))
+            {
+                EnsureLinuxDesktopIntegration(iconPath);
+            }
 
             var window = new PhotinoWindow()
                 .SetTitle(windowTitle)
@@ -100,7 +108,10 @@ namespace Vaulture.Photino
                         bool vaultExists = File.Exists(DbPath);
                         var response = new {
                             type = "INIT",
-                            payload = new { vaultExists = vaultExists }
+                            payload = new {
+                                vaultExists = vaultExists,
+                                linkedAccount = vaultExists ? SupabaseService.GetLinkedAccountInfo() : null
+                            }
                         };
                         w.SendWebMessage(JsonSerializer.Serialize(response));
                     }
@@ -173,36 +184,51 @@ namespace Vaulture.Photino
                         var payload = data.GetProperty("payload");
                         string pass = payload.GetProperty("password").GetString() ?? "";
                         string recKey = payload.GetProperty("recoveryKey").GetString() ?? "";
-                        try
+                        _ = Task.Run(async () =>
                         {
-                            Directory.CreateDirectory(VaultDir);
+                            try
+                            {
+                                // Auto-backup existing vault to cloud if linked before replacing
+                                if (SupabaseService.IsLinked && File.Exists(DbPath))
+                                {
+                                    try
+                                    {
+                                        await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
+                                    }
+                                    catch { }
+                                }
 
-                            // Clear any existing connection pools and old files to ensure fresh encryption
-                            SqliteConnection.ClearAllPools();
-                            if (File.Exists(DbPath)) File.Delete(DbPath);
-                            if (File.Exists(DbPath + "-wal")) File.Delete(DbPath + "-wal");
-                            if (File.Exists(DbPath + "-shm")) File.Delete(DbPath + "-shm");
-                            if (File.Exists(RecoveryPath)) File.Delete(RecoveryPath);
+                                Directory.CreateDirectory(VaultDir);
 
-                            string key = EncryptionService.DeriveKeyFromPassword(pass);
-                            var db = new VaultDbContext(DbPath, key);
-                            db.Database.EnsureCreated();
-                            EncryptionService.CreateRecoveryFile(pass, recKey, RecoveryPath);
-                            CurrentDbContext = db;
+                                // Clear any existing connection pools and old files to ensure fresh encryption
+                                SqliteConnection.ClearAllPools();
+                                if (File.Exists(DbPath)) File.Delete(DbPath);
+                                if (File.Exists(DbPath + "-wal")) File.Delete(DbPath + "-wal");
+                                if (File.Exists(DbPath + "-shm")) File.Delete(DbPath + "-shm");
+                                if (File.Exists(RecoveryPath)) File.Delete(RecoveryPath);
 
-                            w.SendWebMessage(JsonSerializer.Serialize(new {
-                                type = "CREATE_VAULT_RESULT",
-                                payload = new { success = true }
-                            }));
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Create vault failed: {ex.Message}");
-                            w.SendWebMessage(JsonSerializer.Serialize(new {
-                                type = "CREATE_VAULT_RESULT",
-                                payload = new { success = false, error = ex.Message }
-                            }));
-                        }
+                                SupabaseService.SignOut();
+
+                                string key = EncryptionService.DeriveKeyFromPassword(pass);
+                                var db = new VaultDbContext(DbPath, key);
+                                db.Database.EnsureCreated();
+                                EncryptionService.CreateRecoveryFile(pass, recKey, RecoveryPath);
+                                CurrentDbContext = db;
+
+                                w.SendWebMessage(JsonSerializer.Serialize(new {
+                                    type = "CREATE_VAULT_RESULT",
+                                    payload = new { success = true }
+                                }));
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Create vault failed: {ex.Message}");
+                                w.SendWebMessage(JsonSerializer.Serialize(new {
+                                    type = "CREATE_VAULT_RESULT",
+                                    payload = new { success = false, error = ex.Message }
+                                }));
+                            }
+                        });
                     }
                     else if (type == "RECOVER_VAULT")
                     {
@@ -305,7 +331,7 @@ namespace Vaulture.Photino
                                         }
                                         if (File.Exists(DbPath))
                                         {
-                                            await SupabaseService.UploadBackupAsync(DbPath);
+                                            await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
                                         }
                                     }
                                     catch (Exception emailEx)
@@ -438,6 +464,7 @@ namespace Vaulture.Photino
                                 entry = CurrentDbContext.Entries.FirstOrDefault(e => e.Id == id);
                             }
 
+                            bool isNew = (entry == null);
                             bool passwordChanged = false;
                             if (entry == null)
                             {
@@ -491,11 +518,21 @@ namespace Vaulture.Photino
                             {
                                 try
                                 {
-                                    if (passwordChanged)
+                                    if (isNew)
                                     {
                                         await NotificationService.SendNotificationAsync(
+                                            "Vault Entry Added",
+                                            $"A new item \"{savedTitle}\" ({(string.IsNullOrWhiteSpace(savedUsername) ? "no username" : savedUsername)}) was added to your local Vaulture workspace.",
+                                            "#10b981",
+                                            ""
+                                        );
+                                    }
+                                    else
+                                    {
+                                        string detail = passwordChanged ? "was modified and its password was updated" : "was modified";
+                                        await NotificationService.SendNotificationAsync(
                                             "Vault Entry Updated",
-                                            $"The item \"{savedTitle}\" ({(string.IsNullOrWhiteSpace(savedUsername) ? "no username" : savedUsername)}) was modified in your local Vaulture workspace.",
+                                            $"The item \"{savedTitle}\" ({(string.IsNullOrWhiteSpace(savedUsername) ? "no username" : savedUsername)}) {detail} in your local Vaulture workspace.",
                                             "#0969da",
                                             ""
                                         );
@@ -503,7 +540,7 @@ namespace Vaulture.Photino
 
                                     if (SupabaseService.IsLinked)
                                     {
-                                        bool backedUp = await SupabaseService.UploadBackupAsync(DbPath);
+                                        bool backedUp = await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
                                         w.SendWebMessage(JsonSerializer.Serialize(new {
                                             type = "SYNC_RESULT",
                                             payload = new { success = backedUp, lastSynced = DateTime.UtcNow.ToString("g") }
@@ -602,7 +639,7 @@ namespace Vaulture.Photino
 
                                         if (SupabaseService.IsLinked)
                                         {
-                                            bool backedUp = await SupabaseService.UploadBackupAsync(DbPath);
+                                            bool backedUp = await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
                                             w.SendWebMessage(JsonSerializer.Serialize(new {
                                                 type = "SYNC_RESULT",
                                                 payload = new { success = backedUp, lastSynced = DateTime.UtcNow.ToString("g") }
@@ -660,6 +697,7 @@ namespace Vaulture.Photino
                             var entry = CurrentDbContext.Entries.FirstOrDefault(e => e.Id == id);
                             if (entry != null)
                             {
+                                string deletedTitle = entry.Title;
                                 CurrentDbContext.Entries.Remove(entry);
                                 CurrentDbContext.SaveChanges();
 
@@ -667,9 +705,16 @@ namespace Vaulture.Photino
                                 {
                                     try
                                     {
+                                        await NotificationService.SendNotificationAsync(
+                                            "Vault Entry Removed",
+                                            $"The item \"{deletedTitle}\" was removed from your local Vaulture workspace.",
+                                            "#e74c3c",
+                                            ""
+                                        );
+
                                         if (SupabaseService.IsLinked)
                                         {
-                                            bool backedUp = await SupabaseService.UploadBackupAsync(DbPath);
+                                            bool backedUp = await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
                                             w.SendWebMessage(JsonSerializer.Serialize(new {
                                                 type = "SYNC_RESULT",
                                                 payload = new { success = backedUp, lastSynced = DateTime.UtcNow.ToString("g") }
@@ -719,7 +764,7 @@ namespace Vaulture.Photino
                                 try
                                 {
                                     if (SupabaseService.IsLinked)
-                                        await SupabaseService.UploadBackupAsync(DbPath);
+                                        await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
                                 }
                                 catch { }
                             });
@@ -767,7 +812,7 @@ namespace Vaulture.Photino
                                     try
                                     {
                                         if (SupabaseService.IsLinked)
-                                            await SupabaseService.UploadBackupAsync(DbPath);
+                                            await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
                                     }
                                     catch { }
                                 });
@@ -820,7 +865,7 @@ namespace Vaulture.Photino
                                     try
                                     {
                                         if (SupabaseService.IsLinked)
-                                            await SupabaseService.UploadBackupAsync(DbPath);
+                                            await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
                                     }
                                     catch { }
                                 });
@@ -873,7 +918,7 @@ namespace Vaulture.Photino
                                     try
                                     {
                                         if (SupabaseService.IsLinked)
-                                            await SupabaseService.UploadBackupAsync(DbPath);
+                                            await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
                                     }
                                     catch { }
                                 });
@@ -930,7 +975,7 @@ namespace Vaulture.Photino
                                             try
                                             {
                                                 if (SupabaseService.IsLinked)
-                                                    await SupabaseService.UploadBackupAsync(DbPath);
+                                                    await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
                                             }
                                             catch { }
                                         });
@@ -978,7 +1023,7 @@ namespace Vaulture.Photino
                                     try
                                     {
                                         if (SupabaseService.IsLinked)
-                                            await SupabaseService.UploadBackupAsync(DbPath);
+                                            await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
                                     }
                                     catch { }
                                 });
@@ -1020,7 +1065,7 @@ namespace Vaulture.Photino
                                     try
                                     {
                                         if (SupabaseService.IsLinked)
-                                            await SupabaseService.UploadBackupAsync(DbPath);
+                                            await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
                                     }
                                     catch { }
                                 });
@@ -1047,7 +1092,10 @@ namespace Vaulture.Photino
                             SqliteConnection.ClearAllPools();
                             w.SendWebMessage(JsonSerializer.Serialize(new {
                                 type = "LOCK_RESULT",
-                                payload = new { success = true }
+                                payload = new {
+                                    success = true,
+                                    linkedAccount = File.Exists(DbPath) ? SupabaseService.GetLinkedAccountInfo() : null
+                                }
                             }));
                         }
                         catch (Exception ex)
@@ -1057,6 +1105,36 @@ namespace Vaulture.Photino
                                 payload = new { success = false, error = ex.Message }
                             }));
                         }
+                    }
+                    else if (type == "START_RESTORE")
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                // Auto-backup current vault if linked before switching
+                                if (SupabaseService.IsLinked && File.Exists(DbPath))
+                                {
+                                    try
+                                    {
+                                        await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
+                                    }
+                                    catch { }
+                                }
+                                SupabaseService.SignOut();
+                                w.SendWebMessage(JsonSerializer.Serialize(new {
+                                    type = "START_RESTORE_RESULT",
+                                    payload = new { success = true }
+                                }));
+                            }
+                            catch (Exception ex)
+                            {
+                                w.SendWebMessage(JsonSerializer.Serialize(new {
+                                    type = "START_RESTORE_RESULT",
+                                    payload = new { success = false, error = ex.Message }
+                                }));
+                            }
+                        });
                     }
                     else if (type == "SYNC_VAULT")
                     {
@@ -1073,11 +1151,21 @@ namespace Vaulture.Photino
                                     return;
                                 }
 
-                                bool backedUp = await SupabaseService.UploadBackupAsync(DbPath);
+                                bool backedUp = await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
                                 w.SendWebMessage(JsonSerializer.Serialize(new {
                                     type = "SYNC_RESULT",
                                     payload = new { success = backedUp, lastSynced = DateTime.UtcNow.ToString("g") }
                                 }));
+
+                                if (backedUp)
+                                {
+                                    await NotificationService.SendNotificationAsync(
+                                        "Cloud Backup",
+                                        "Your encrypted vault was successfully synced and backed up to your secure cloud storage.",
+                                        "#10b981",
+                                        ""
+                                    );
+                                }
                             }
                             catch (Exception ex)
                             {
@@ -1122,23 +1210,43 @@ namespace Vaulture.Photino
                                     return;
                                 }
 
-                                var backupBytes = await SupabaseService.DownloadBackupAsync();
-                                if (backupBytes == null || backupBytes.Length == 0)
+                                var backupData = await SupabaseService.DownloadBackupAsync();
+                                if (backupData == null || backupData.DatabaseBytes == null || backupData.DatabaseBytes.Length == 0)
                                 {
+                                    var prof = SupabaseService.GetUserProfile();
                                     w.SendWebMessage(JsonSerializer.Serialize(new {
                                         type = "RESTORE_VAULT_BACKUP_RESULT",
-                                        payload = new { success = false, error = "No cloud backup found for your account." }
+                                        payload = new {
+                                            success = false,
+                                            error = $"No cloud backup found for {prof.Email}."
+                                        }
                                     }));
                                     return;
                                 }
 
                                 SqliteConnection.ClearAllPools();
                                 Directory.CreateDirectory(VaultDir);
-                                await File.WriteAllBytesAsync(DbPath, backupBytes);
+                                if (File.Exists(DbPath + "-wal")) try { File.Delete(DbPath + "-wal"); } catch { }
+                                if (File.Exists(DbPath + "-shm")) try { File.Delete(DbPath + "-shm"); } catch { }
 
+                                await File.WriteAllBytesAsync(DbPath, backupData.DatabaseBytes);
+                                if (backupData.RecoveryBytes != null && backupData.RecoveryBytes.Length > 0)
+                                {
+                                    await File.WriteAllBytesAsync(RecoveryPath, backupData.RecoveryBytes);
+                                }
+
+                                var profile = SupabaseService.GetUserProfile();
                                 w.SendWebMessage(JsonSerializer.Serialize(new {
                                     type = "RESTORE_VAULT_BACKUP_RESULT",
-                                    payload = new { success = true }
+                                    payload = new {
+                                        success = true,
+                                        user = new {
+                                            name = profile.Name,
+                                            email = profile.Email,
+                                            picture = profile.PictureUrl
+                                        },
+                                        backupDate = backupData.LastModified ?? "Recent"
+                                    }
                                 }));
                             }
                             catch (Exception ex)
@@ -1147,6 +1255,77 @@ namespace Vaulture.Photino
                                     type = "RESTORE_VAULT_BACKUP_RESULT",
                                     payload = new { success = false, error = ex.Message }
                                 }));
+                            }
+                        });
+                    }
+                    else if (type == "VERIFY_RESTORE_PASSWORD")
+                    {
+                        string pass = data.GetProperty("payload").GetProperty("password").GetString() ?? "";
+                        _ = Task.Run(() =>
+                        {
+                            try
+                            {
+                                string key = EncryptionService.DeriveKeyFromPassword(pass);
+                                var db = new VaultDbContext(DbPath, key);
+                                _ = db.Folders.Count();
+                                CurrentDbContext = db;
+
+                                try
+                                {
+                                    db.Database.ExecuteSqlRaw(@"
+                                        CREATE TABLE IF NOT EXISTS ""PasswordHistories"" (
+                                            ""Id"" INTEGER NOT NULL CONSTRAINT ""PK_PasswordHistories"" PRIMARY KEY AUTOINCREMENT,
+                                            ""EntryId"" INTEGER NOT NULL,
+                                            ""OldPassword"" TEXT NOT NULL,
+                                            ""ChangedAt"" TEXT NOT NULL,
+                                            CONSTRAINT ""FK_PasswordHistories_Entries_EntryId"" FOREIGN KEY (""EntryId"") REFERENCES ""Entries"" (""Id"") ON DELETE CASCADE
+                                        );
+                                    ");
+                                }
+                                catch { }
+                                try { db.Database.ExecuteSqlRaw(@"ALTER TABLE ""Entries"" ADD COLUMN ""Icon"" TEXT;"); } catch { }
+                                try { db.Database.ExecuteSqlRaw(@"ALTER TABLE ""Folders"" ADD COLUMN ""Icon"" TEXT;"); } catch { }
+
+                                var profile = SupabaseService.GetUserProfile();
+                                w.SendWebMessage(JsonSerializer.Serialize(new {
+                                    type = "VERIFY_RESTORE_PASSWORD_RESULT",
+                                    payload = new {
+                                        success = true,
+                                        linkedAccount = new {
+                                            name = profile.Name,
+                                            email = profile.Email,
+                                            picture = profile.PictureUrl
+                                        }
+                                    }
+                                }));
+
+                                _ = Task.Run(async () =>
+                                {
+                                    await NotificationService.SendNotificationAsync(
+                                        "Vault Restored",
+                                        "Your encrypted vault was successfully restored from cloud backup on this device.",
+                                        "#10b981",
+                                        ""
+                                    );
+                                });
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Verify restore password failed: {ex.Message}");
+                                w.SendWebMessage(JsonSerializer.Serialize(new {
+                                    type = "VERIFY_RESTORE_PASSWORD_RESULT",
+                                    payload = new { success = false, error = "Incorrect master password for this backup." }
+                                }));
+
+                                _ = Task.Run(async () =>
+                                {
+                                    await NotificationService.SendNotificationAsync(
+                                        "Unsuccessful Restore Attempt",
+                                        "An attempt was made to restore your cloud backup on this device, but an incorrect master password was entered.",
+                                        "#d29922",
+                                        ""
+                                    );
+                                });
                             }
                         });
                     }
@@ -1170,6 +1349,79 @@ namespace Vaulture.Photino
             });
 
             window.WaitForClose();
+        }
+
+        private static void EnsureLinuxDesktopIntegration(string iconPath)
+        {
+            try
+            {
+                string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                string appsDir = Path.Combine(home, ".local", "share", "applications");
+                string iconsDir = Path.Combine(home, ".local", "share", "icons", "hicolor", "256x256", "apps");
+
+                Directory.CreateDirectory(appsDir);
+                Directory.CreateDirectory(iconsDir);
+
+                // Install 256x256 icon
+                string targetIcon = Path.Combine(iconsDir, "vaulture.png");
+                string targetIconUpper = Path.Combine(iconsDir, "Vaulture.png");
+                if (File.Exists(iconPath))
+                {
+                    if (!File.Exists(targetIcon) || new FileInfo(targetIcon).Length != new FileInfo(iconPath).Length)
+                    {
+                        File.Copy(iconPath, targetIcon, true);
+                        File.Copy(iconPath, targetIconUpper, true);
+                    }
+                }
+
+                // Install .desktop files for both cases to match Wayland app_id and X11 WM_CLASS
+                string exePath = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "Vaulture");
+                string desktopContent = $"""
+                [Desktop Entry]
+                Name=Vaulture
+                Comment=Personal Encrypted Vault
+                Exec="{exePath}"
+                Icon=vaulture
+                Terminal=false
+                Type=Application
+                Categories=Utility;Security;
+                StartupWMClass=Vaulture
+                """;
+
+                string[] desktopFiles = [
+                    Path.Combine(appsDir, "Vaulture.desktop"),
+                    Path.Combine(appsDir, "vaulture.desktop")
+                ];
+
+                bool updated = false;
+                foreach (var file in desktopFiles)
+                {
+                    if (!File.Exists(file) || File.ReadAllText(file) != desktopContent)
+                    {
+                        File.WriteAllText(file, desktopContent);
+                        updated = true;
+                    }
+                }
+
+                if (updated)
+                {
+                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("kbuildsycoca6", "--noincremental") { CreateNoWindow = true })?.WaitForExit(1000); } catch { }
+                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("update-desktop-database", appsDir) { CreateNoWindow = true })?.WaitForExit(1000); } catch { }
+                }
+            }
+            catch
+            {
+                // Non-critical background integration
+            }
+        }
+
+        internal static class GlibNative
+        {
+            [System.Runtime.InteropServices.DllImport("libglib-2.0.so.0", EntryPoint = "g_set_prgname")]
+            public static extern void g_set_prgname(string prgname);
+
+            [System.Runtime.InteropServices.DllImport("libglib-2.0.so.0", EntryPoint = "g_set_application_name")]
+            public static extern void g_set_application_name(string appname);
         }
     }
 }

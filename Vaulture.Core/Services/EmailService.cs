@@ -91,7 +91,7 @@ Vaulture Team";
         
         <!-- Header with App Logo -->
         <div style=""text-align: center; margin-bottom: 24px;"">
-            <img src=""cid:vaulture-logo"" width=""64"" height=""64"" alt=""Vaulture Logo"" style=""display: block; width: 64px; height: 64px; margin: 0 auto 12px auto; object-fit: contain;"" />
+            <img src=""cid:vaulture-logo"" width=""64"" height=""64"" alt=""Vaulture Logo"" style=""display: block; width: 64px; height: 64px; margin: 0 auto 12px auto; object-fit: contain; border-radius: 50%;"" />
             <h1 style=""margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: -0.4px;"">Vaulture</h1>
             <p style=""margin: 4px 0 0 0; font-size: 13px; color: #71717a;"">Personal Encrypted Vault</p>
         </div>
@@ -197,7 +197,7 @@ Vaulture Team";
         
         <!-- Header with App Logo -->
         <div style=""text-align: center; margin-bottom: 24px;"">
-            <img src=""cid:vaulture-logo"" width=""64"" height=""64"" alt=""Vaulture Logo"" style=""display: block; width: 64px; height: 64px; margin: 0 auto 12px auto; object-fit: contain;"" />
+            <img src=""cid:vaulture-logo"" width=""64"" height=""64"" alt=""Vaulture Logo"" style=""display: block; width: 64px; height: 64px; margin: 0 auto 12px auto; object-fit: contain; border-radius: 50%;"" />
             <h1 style=""margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: -0.4px;"">Vaulture</h1>
             <p style=""margin: 4px 0 0 0; font-size: 13px; color: #71717a;"">Personal Encrypted Vault</p>
         </div>
