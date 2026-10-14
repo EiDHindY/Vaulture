@@ -25,6 +25,8 @@ dotnet publish "$SCRIPT_DIR/Vaulture.Photino/Vaulture.Photino.csproj" \
     -p:PublishSingleFile=true \
     -o "$RELEASE_DIR/linux-x64"
 
+rm -f "$RELEASE_DIR/linux-x64"/*.pdb
+
 echo "Creating Vaulture-linux-x64.tar.gz..."
 tar -czf "$RELEASE_DIR/Vaulture-linux-x64.tar.gz" -C "$RELEASE_DIR/linux-x64" .
 
@@ -35,6 +37,8 @@ dotnet publish "$SCRIPT_DIR/Vaulture.Photino/Vaulture.Photino.csproj" \
     --self-contained \
     -p:PublishSingleFile=true \
     -o "$RELEASE_DIR/win-x64"
+
+rm -f "$RELEASE_DIR/win-x64"/*.pdb
 
 echo "Creating Vaulture-win-x64.zip..."
 cd "$RELEASE_DIR/win-x64"
