@@ -173,7 +173,8 @@ namespace Vaulture.Core.Services
 
         public static void SignOut()
         {
-            Client.Auth.SignOut();
+            try { Client?.Auth?.SignOut(); } catch { }
+            try { new DiskSessionHandler().DestroySession(); } catch { }
         }
 
         public static bool IsLinked => (Client?.Auth?.CurrentUser ?? new DiskSessionHandler().LoadSession()?.User) != null;
@@ -241,40 +242,79 @@ namespace Vaulture.Core.Services
                     picture = p;
             }
 
-            // Check if we have a locally cached avatar or need to download and convert picture URL to base64
+            // Per-user avatar cache to prevent cross-account avatar leaks and stale images
             var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Vaulture");
-            var avatarPath = Path.Combine(folder, "avatar.jpg");
+            var legacyAvatar = Path.Combine(folder, "avatar.jpg");
+            if (File.Exists(legacyAvatar))
+            {
+                try { File.Delete(legacyAvatar); } catch { }
+            }
 
-            if (File.Exists(avatarPath))
+            string userKey = !string.IsNullOrEmpty(user.Id) ? user.Id : (!string.IsNullOrEmpty(user.Email) ? user.Email : "default");
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            string hash = Convert.ToHexString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(userKey))).Substring(0, 16).ToLowerInvariant();
+            
+            var userAvatarPath = Path.Combine(folder, $"avatar_{hash}.dat");
+            var userUrlPath = Path.Combine(folder, $"avatar_{hash}.url");
+
+            // If we have an avatar URL from Google/Supabase
+            if (!string.IsNullOrEmpty(picture) && picture.StartsWith("http"))
+            {
+                bool needDownload = true;
+                if (File.Exists(userAvatarPath) && File.Exists(userUrlPath))
+                {
+                    try
+                    {
+                        string cachedUrl = File.ReadAllText(userUrlPath);
+                        if (cachedUrl == picture)
+                        {
+                            needDownload = false;
+                        }
+                    }
+                    catch { }
+                }
+
+                if (needDownload)
+                {
+                    try
+                    {
+                        using var http = new HttpClient();
+                        http.Timeout = TimeSpan.FromSeconds(5);
+                        byte[] bytes = http.GetByteArrayAsync(picture).GetAwaiter().GetResult();
+                        if (bytes != null && bytes.Length > 0)
+                        {
+                            Directory.CreateDirectory(folder);
+                            File.WriteAllBytes(userAvatarPath, bytes);
+                            File.WriteAllText(userUrlPath, picture);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error downloading fresh avatar: {ex.Message}");
+                    }
+                }
+            }
+
+            // Return base64 from the per-user cached avatar if present
+            if (File.Exists(userAvatarPath))
             {
                 try
                 {
-                    byte[] bytes = File.ReadAllBytes(avatarPath);
+                    byte[] bytes = File.ReadAllBytes(userAvatarPath);
                     if (bytes.Length > 0)
                     {
-                        picture = "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
+                        string mime = "image/jpeg";
+                        if (bytes.Length > 8 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47)
+                            mime = "image/png";
+                        else if (bytes.Length > 2 && bytes[0] == 0xFF && bytes[1] == 0xD8)
+                            mime = "image/jpeg";
+                        else if (bytes.Length > 4 && bytes[0] == 'R' && bytes[1] == 'I' && bytes[2] == 'F' && bytes[3] == 'F')
+                            mime = "image/webp";
+
+                        picture = $"data:{mime};base64," + Convert.ToBase64String(bytes);
                     }
                 }
                 catch { }
-            }
-            else if (!string.IsNullOrEmpty(picture) && picture.StartsWith("http"))
-            {
-                try
-                {
-                    using var http = new HttpClient();
-                    http.Timeout = TimeSpan.FromSeconds(5);
-                    byte[] bytes = http.GetByteArrayAsync(picture).GetAwaiter().GetResult();
-                    if (bytes.Length > 0)
-                    {
-                        Directory.CreateDirectory(folder);
-                        File.WriteAllBytes(avatarPath, bytes);
-                        picture = "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error caching avatar: {ex.Message}");
-                }
             }
 
             return (name, email, picture);

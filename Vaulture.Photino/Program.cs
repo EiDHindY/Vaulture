@@ -257,6 +257,14 @@ namespace Vaulture.Photino
                             if (File.Exists(DbPath + "-wal")) File.Delete(DbPath + "-wal");
                             if (File.Exists(DbPath + "-shm")) File.Delete(DbPath + "-shm");
                             if (File.Exists(RecoveryPath)) File.Delete(RecoveryPath);
+                            foreach (var f in Directory.GetFiles(VaultDir, "avatar*.*"))
+                            {
+                                try { File.Delete(f); } catch { }
+                            }
+                            if (File.Exists(Path.Combine(VaultDir, "profile_pic.png")))
+                            {
+                                try { File.Delete(Path.Combine(VaultDir, "profile_pic.png")); } catch { }
+                            }
                             CurrentDbContext = null;
 
                             w.SendWebMessage(JsonSerializer.Serialize(new {
@@ -384,6 +392,7 @@ namespace Vaulture.Photino
                                 .ToList();
 
                             var profile = SupabaseService.GetUserProfile();
+                            Console.WriteLine($"[Vaulture] Profile loaded for {profile.Email}: picture format={profile.PictureUrl?.Substring(0, Math.Min(30, profile.PictureUrl?.Length ?? 0))}");
 
                             w.SendWebMessage(JsonSerializer.Serialize(new {
                                 type = "DATA_RESULT",
