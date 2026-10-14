@@ -33,7 +33,7 @@ namespace Vaulture.Core.Services
         private static HttpListener? _currentListener;
         private static readonly object _listenerLock = new();
 
-        public static async Task AuthenticateWithGoogleAsync(Action<string>? onAuthUrl = null, CancellationToken ct = default)
+        public static void CancelPendingAuth()
         {
             lock (_listenerLock)
             {
@@ -43,6 +43,11 @@ namespace Vaulture.Core.Services
                     _currentListener = null;
                 }
             }
+        }
+
+        public static async Task AuthenticateWithGoogleAsync(Action<string>? onAuthUrl = null, CancellationToken ct = default)
+        {
+            CancelPendingAuth();
 
             var redirectUri = "http://127.0.0.1:54321/callback/";
             
@@ -69,7 +74,7 @@ namespace Vaulture.Core.Services
             OpenBrowser(authUrl);
 
             // Wait for response with timeout
-            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
             using var reg = linkedCts.Token.Register(() =>
             {

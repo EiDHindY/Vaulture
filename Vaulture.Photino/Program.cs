@@ -327,6 +327,14 @@ namespace Vaulture.Photino
                             }
                         });
                     }
+                    else if (type == "CANCEL_GOOGLE_AUTH")
+                    {
+                        try
+                        {
+                            SupabaseService.CancelPendingAuth();
+                        }
+                        catch { }
+                    }
                     else if (type == "GET_DATA")
                     {
                         try

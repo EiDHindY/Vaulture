@@ -134,6 +134,7 @@ function App() {
             setAuthUrl(data.payload.url);
           } else if (data.type === 'GOOGLE_SIGN_IN_RESULT') {
             setGoogleLoading(false);
+            setAuthUrl(null);
             if (data.payload.success) {
               setGoogleSuccess(data.payload.email || 'Account connected');
               setGoogleError('');
@@ -270,6 +271,31 @@ function App() {
     }
   }
 
+  const handleCancelGoogleAuth = () => {
+    setGoogleLoading(false);
+    setAuthUrl(null);
+    setGoogleError('Sign-in cancelled. You can try again.');
+    // @ts-ignore
+    if (window.external?.sendMessage) {
+      // @ts-ignore
+      window.external.sendMessage(JSON.stringify({ type: 'CANCEL_GOOGLE_AUTH' }));
+    }
+  };
+
+  const handleOpenAuthUrl = () => {
+    if (!authUrl) return;
+    // @ts-ignore
+    if (window.external?.sendMessage) {
+      // @ts-ignore
+      window.external.sendMessage(JSON.stringify({
+        type: 'OPEN_URL',
+        payload: { url: authUrl }
+      }));
+    } else {
+      window.open(authUrl, '_blank');
+    }
+  };
+
   const handleRecover = (e: FormEvent) => {
     e.preventDefault();
     setRecoveryError('');
@@ -389,6 +415,14 @@ function App() {
             onClick={() => {
               setError('');
               setRecoveryError('');
+              setGoogleLoading(false);
+              setGoogleError('');
+              setAuthUrl(null);
+              // @ts-ignore
+              if (window.external?.sendMessage) {
+                // @ts-ignore
+                window.external.sendMessage(JSON.stringify({ type: 'CANCEL_GOOGLE_AUTH' }));
+              }
               setMode(vaultExists ? 'login' : 'welcome');
             }}
             className="absolute top-6 left-6 text-neutral-400 hover:text-white cursor-pointer transition-colors flex items-center gap-1 text-sm"
@@ -513,7 +547,13 @@ function App() {
             </button>
 
             <button
-              onClick={() => setMode('restore')}
+              onClick={() => {
+                setGoogleLoading(false);
+                setGoogleError('');
+                setGoogleSuccess(null);
+                setAuthUrl(null);
+                setMode('restore');
+              }}
               className="w-full py-4 px-4 bg-neutral-800 hover:bg-neutral-700 text-white font-semibold rounded-xl border border-neutral-700 transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               <DownloadCloud size={20} /> Restore Existing Vault
@@ -748,9 +788,25 @@ function App() {
                     </p>
                     {authUrl && (
                       <p className="text-xs text-neutral-300 pt-1">
-                        Browser didn't open? <a href={authUrl} target="_blank" rel="noreferrer" className="text-emerald-400 hover:text-emerald-300 underline font-semibold cursor-pointer">Click here to sign in</a>
+                        Browser didn't open?{' '}
+                        <button
+                          type="button"
+                          onClick={handleOpenAuthUrl}
+                          className="text-emerald-400 hover:text-emerald-300 underline font-semibold cursor-pointer inline"
+                        >
+                          Click here to open browser
+                        </button>
                       </p>
                     )}
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={handleCancelGoogleAuth}
+                        className="text-xs text-neutral-400 hover:text-red-400 transition-colors underline cursor-pointer"
+                      >
+                        Cancel sign-in
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -800,9 +856,25 @@ function App() {
                     </p>
                     {authUrl && (
                       <p className="text-xs text-neutral-300 pt-1">
-                        Browser didn't open? <a href={authUrl} target="_blank" rel="noreferrer" className="text-emerald-400 hover:text-emerald-300 underline font-semibold cursor-pointer">Click here to sign in</a>
+                        Browser didn't open?{' '}
+                        <button
+                          type="button"
+                          onClick={handleOpenAuthUrl}
+                          className="text-emerald-400 hover:text-emerald-300 underline font-semibold cursor-pointer inline"
+                        >
+                          Click here to open browser
+                        </button>
                       </p>
                     )}
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={handleCancelGoogleAuth}
+                        className="text-xs text-neutral-400 hover:text-red-400 transition-colors underline cursor-pointer"
+                      >
+                        Cancel sign-in
+                      </button>
+                    </div>
                   </div>
                 )}
 
