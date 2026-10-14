@@ -194,22 +194,6 @@ namespace Vaulture.Photino
                                 type = "CREATE_VAULT_RESULT",
                                 payload = new { success = true }
                             }));
-
-                            _ = Task.Run(async () =>
-                            {
-                                try
-                                {
-                                    if (SupabaseService.IsLinked)
-                                    {
-                                        var profile = SupabaseService.GetUserProfile();
-                                        if (!string.IsNullOrEmpty(profile.Email))
-                                        {
-                                            await EmailService.SendWelcomeEmailAsync(profile.Email, profile.Name);
-                                        }
-                                    }
-                                }
-                                catch { }
-                            });
                         }
                         catch (Exception ex)
                         {
@@ -265,6 +249,7 @@ namespace Vaulture.Photino
                             {
                                 try { File.Delete(Path.Combine(VaultDir, "profile_pic.png")); } catch { }
                             }
+                            try { SupabaseService.SignOut(); } catch { }
                             CurrentDbContext = null;
 
                             w.SendWebMessage(JsonSerializer.Serialize(new {
