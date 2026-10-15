@@ -358,6 +358,70 @@ namespace Vaulture.Photino
                         }
                         catch { }
                     }
+                    else if (type == "SWITCH_GOOGLE_ACCOUNT")
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                if (SupabaseService.Client == null)
+                                {
+                                    await SupabaseService.InitializeAsync();
+                                }
+
+                                SupabaseService.SignOut();
+
+                                await SupabaseService.AuthenticateWithGoogleAsync(url =>
+                                {
+                                    w.SendWebMessage(JsonSerializer.Serialize(new {
+                                        type = "GOOGLE_AUTH_URL",
+                                        payload = new { url = url }
+                                    }));
+                                });
+                                var profile = SupabaseService.GetUserProfile();
+
+                                w.SendWebMessage(JsonSerializer.Serialize(new {
+                                    type = "SWITCH_GOOGLE_ACCOUNT_RESULT",
+                                    payload = new {
+                                        success = true,
+                                        name = profile.Name,
+                                        email = profile.Email,
+                                        picture = profile.PictureUrl
+                                    }
+                                }));
+
+                                _ = Task.Run(async () =>
+                                {
+                                    try
+                                    {
+                                        if (!string.IsNullOrEmpty(profile.Email))
+                                        {
+                                            await EmailService.SendWelcomeEmailAsync(profile.Email, profile.Name);
+                                        }
+                                        if (File.Exists(DbPath))
+                                        {
+                                            await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
+                                        }
+                                    }
+                                    catch (Exception emailEx)
+                                    {
+                                        Console.WriteLine($"Welcome email / upload error: {emailEx.Message}");
+                                    }
+                                });
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Switch Google Account failed: {ex.Message}");
+                                w.SendWebMessage(JsonSerializer.Serialize(new {
+                                    type = "SWITCH_GOOGLE_ACCOUNT_RESULT",
+                                    payload = new {
+                                        success = false,
+                                        error = ex.Message
+                                    }
+                                }));
+                            }
+                        });
+                    }
                     else if (type == "GET_DATA")
                     {
                         try

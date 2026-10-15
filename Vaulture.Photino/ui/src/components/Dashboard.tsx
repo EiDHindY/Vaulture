@@ -26,7 +26,8 @@ import {
   RotateCcw,
   KeyRound,
   CornerDownRight,
-  ArrowUpCircle
+  ArrowUpCircle,
+  ArrowRightLeft
 } from 'lucide-react';
 import { VaultEntry, VaultFolder, UserProfile } from '../types';
 import {
@@ -38,6 +39,7 @@ import {
 import { VaultIcon } from '../utils/iconRegistry';
 import { IconPickerModal } from './IconPickerModal';
 import { UpdateModal, UpdateInfo } from './UpdateModal';
+import { SwitchAccountModal } from './SwitchAccountModal';
 import { VaultBreadcrumbs, BreadcrumbNode } from './VaultBreadcrumbs';
 import { ParentChildHierarchy } from './ParentChildHierarchy';
 import logoUrl from '../assets/logo.png';
@@ -599,6 +601,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
   const [updateDownloadProgress, setUpdateDownloadProgress] = useState(0);
   const [updateErrorMessage, setUpdateErrorMessage] = useState<string | null>(null);
 
+  // Google Account Switch / Link State
+  const [isSwitchAccountOpen, setIsSwitchAccountOpen] = useState(false);
+  const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
+  const [switchAuthUrl, setSwitchAuthUrl] = useState<string | null>(null);
+  const [switchErrorMessage, setSwitchErrorMessage] = useState<string | null>(null);
+  const [switchSuccessEmail, setSwitchSuccessEmail] = useState<string | null>(null);
+
   // Periodic background check & auto-sync if pending
   useEffect(() => {
     const interval = setInterval(() => {
@@ -876,6 +885,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
         } else if (data.type === 'UPDATE_DOWNLOAD_ERROR') {
           setUpdateDownloadState('error');
           setUpdateErrorMessage(data.payload?.error || 'Failed to download update.');
+        } else if (data.type === 'GOOGLE_AUTH_URL') {
+          setSwitchAuthUrl(data.payload?.url || null);
+        } else if (data.type === 'SWITCH_GOOGLE_ACCOUNT_RESULT') {
+          setIsSwitchingAccount(false);
+          if (data.payload?.success) {
+            setUser({
+              name: data.payload.name || 'Vaulture User',
+              email: data.payload.email || '',
+              picture: data.payload.picture || '',
+              isLinked: true,
+            });
+            setAvatarError(false);
+            setSwitchSuccessEmail(data.payload.email || 'Account connected');
+            setSwitchErrorMessage(null);
+            sendIPC('CHECK_BACKUP_STATUS');
+          } else {
+            setSwitchErrorMessage(data.payload?.error || 'Failed to switch Google account.');
+          }
         }
 
       } catch (err) {
@@ -1483,6 +1510,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
     sendIPC('APPLY_UPDATE_AND_RESTART', {});
   };
 
+  const handleStartSwitchAccount = () => {
+    setIsSwitchingAccount(true);
+    setSwitchErrorMessage(null);
+    setSwitchSuccessEmail(null);
+    setSwitchAuthUrl(null);
+    sendIPC('SWITCH_GOOGLE_ACCOUNT');
+  };
+
+  const handleCancelSwitchAccount = () => {
+    setIsSwitchingAccount(false);
+    setSwitchAuthUrl(null);
+    setSwitchErrorMessage('Sign-in cancelled.');
+    sendIPC('CANCEL_GOOGLE_AUTH');
+  };
+
+  const handleCloseSwitchModal = () => {
+    if (isSwitchingAccount) {
+      handleCancelSwitchAccount();
+    }
+    setIsSwitchAccountOpen(false);
+    setSwitchErrorMessage(null);
+    setSwitchSuccessEmail(null);
+    setSwitchAuthUrl(null);
+  };
+
+  const handleOpenExternalAuthUrl = () => {
+    if (switchAuthUrl) {
+      sendIPC('OPEN_URL', { url: switchAuthUrl });
+    }
+  };
+
   // Start new password form (preset folder to active folder!)
   const handleStartCreate = () => {
     setFormData({
@@ -1983,6 +2041,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                   </span>
                 </button>
               )}
+
+              {/* Switch / Link Google Account button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSwitchErrorMessage(null);
+                  setSwitchSuccessEmail(null);
+                  setSwitchAuthUrl(null);
+                  setIsSwitchAccountOpen(true);
+                }}
+                className="w-full mt-1 py-1.5 px-3 rounded-xl text-xs font-medium text-neutral-400 hover:text-white bg-neutral-900/60 hover:bg-neutral-850 border border-neutral-800 transition-all flex items-center justify-between cursor-pointer group"
+                title={user.isLinked ? "Switch to a different Google account" : "Connect your Google account"}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <ArrowRightLeft size={13} className="text-neutral-500 group-hover:text-emerald-400 shrink-0 transition-colors" />
+                  <span className="truncate">{user.isLinked ? 'Switch Google Account' : 'Link Google Account'}</span>
+                </div>
+                <span className="text-[10px] text-neutral-500 group-hover:text-neutral-300 shrink-0 ml-1.5">
+                  {user.isLinked ? 'Change' : 'Connect'}
+                </span>
+              </button>
 
               {/* Check for Updates button */}
               <button
@@ -3224,6 +3303,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
         onCheckUpdate={handleCheckForUpdates}
         onStartDownload={handleStartUpdateDownload}
         onApplyAndRestart={handleApplyUpdateAndRestart}
+      />
+
+      {/* Switch / Link Google Account Modal */}
+      <SwitchAccountModal
+        isOpen={isSwitchAccountOpen}
+        onClose={handleCloseSwitchModal}
+        currentUser={user}
+        isSwitching={isSwitchingAccount}
+        authUrl={switchAuthUrl}
+        errorMessage={switchErrorMessage}
+        successEmail={switchSuccessEmail}
+        onStartSwitch={handleStartSwitchAccount}
+        onCancelSwitch={handleCancelSwitchAccount}
+        onOpenBrowser={handleOpenExternalAuthUrl}
       />
     </div>
   );
