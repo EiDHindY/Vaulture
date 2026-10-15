@@ -74,6 +74,7 @@ function App() {
   const [error, setError] = useState('')
   const [isUnlocking, setIsUnlocking] = useState(false)
   const [isUnlockedSuccess, setIsUnlockedSuccess] = useState(false)
+  const [isTransitioning, setIsTransitioning] = useState(false)
   const unlockStartTimeRef = useRef<number>(0)
 
   // Setup Wizard State
@@ -140,13 +141,30 @@ function App() {
               if (data.payload.success) {
                 setIsUnlocking(false);
                 setIsUnlockedSuccess(true);
+                // Step 1: Hold the unlocked state for 380ms for user feedback
                 setTimeout(() => {
-                  setMode('dashboard');
-                  setIsUnlockedSuccess(false);
-                }, 600);
+                  // Step 2: Trigger smooth dissolve/scale exit animation on the lock card
+                  setIsTransitioning(true);
+                  setTimeout(() => {
+                    // Step 3: Enter dashboard with View Transition if available
+                    const proceed = () => {
+                      setMode('dashboard');
+                      setIsUnlockedSuccess(false);
+                      setIsTransitioning(false);
+                    };
+                    // @ts-ignore
+                    if (document.startViewTransition) {
+                      // @ts-ignore
+                      document.startViewTransition(proceed);
+                    } else {
+                      proceed();
+                    }
+                  }, 300);
+                }, 380);
               } else {
                 setIsUnlocking(false);
                 setIsUnlockedSuccess(false);
+                setIsTransitioning(false);
                 setError(data.payload.error || 'Incorrect master password.');
               }
             }, remainingWait);
@@ -427,7 +445,16 @@ function App() {
             window.external.sendMessage(JSON.stringify({ type: 'LOCK_VAULT' }));
           }
           setPassword('');
-          setMode('login');
+          const proceed = () => {
+            setMode('login');
+          };
+          // @ts-ignore
+          if (document.startViewTransition) {
+            // @ts-ignore
+            document.startViewTransition(proceed);
+          } else {
+            proceed();
+          }
         }}
         onWipeVault={() => setShowWipeModal(true)}
       />
@@ -435,7 +462,16 @@ function App() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-neutral-950 text-white font-sans select-none">
+    <div className="flex flex-col items-center justify-center h-screen bg-neutral-950 text-white font-sans select-none relative overflow-hidden">
+      
+      {/* Subtle Ambient Emerald Aura behind Vault during unlock */}
+      <div 
+        className={`absolute w-[450px] h-[450px] rounded-full bg-emerald-500/10 blur-[100px] pointer-events-none transition-all duration-700 ease-out ${
+          isUnlockedSuccess || isTransitioning
+            ? 'opacity-100 scale-125'
+            : 'opacity-0 scale-75'
+        }`}
+      />
       
       {/* Modal: Master Password Confirmation */}
       {showPassModal && (
@@ -541,7 +577,13 @@ function App() {
         </div>
       )}
 
-      <div className="w-full max-w-md p-8 bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl relative">
+      <div className={`w-full max-w-md p-8 bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl relative transition-all duration-300 ${
+        isTransitioning
+          ? 'animate-lock-exit'
+          : isUnlockedSuccess
+          ? 'border-emerald-500/50 shadow-[0_0_45px_rgba(16,185,129,0.25)]'
+          : 'animate-lock-enter'
+      }`}>
         
         {/* Navigation Back button */}
         {(mode === 'setup' || mode === 'restore' || mode === 'recover') && (

@@ -4,6 +4,7 @@ html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
+  background-color: #0a0a0a;
 }
 
 /* Disable child hover hit-testing & repaints during active wheel scroll */
@@ -11,3 +12,104 @@ html, body, #root {
   pointer-events: none !important;
 }
 
+/* ========================================================= */
+/* Vault Unlock & Dashboard Transition Animations            */
+/* ========================================================= */
+
+@keyframes dashboardEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.988) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes unlockBeam {
+  0% {
+    opacity: 0;
+    transform: translateX(-60%);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(60%);
+  }
+}
+
+@keyframes lockScreenExit {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.035);
+    filter: blur(4px);
+  }
+}
+
+@keyframes lockScreenEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.975);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-dashboard-enter {
+  animation: dashboardEnter 380ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-unlock-beam {
+  animation: unlockBeam 1100ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-lock-exit {
+  animation: lockScreenExit 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
+}
+
+.animate-lock-enter {
+  animation: lockScreenEnter 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Support View Transitions API for seamless cross-fades */
+::view-transition-old(root) {
+  animation: 300ms cubic-bezier(0.16, 1, 0.3, 1) both view-fade-out;
+}
+::view-transition-new(root) {
+  animation: 380ms cubic-bezier(0.16, 1, 0.3, 1) both view-fade-in;
+}
+
+@keyframes view-fade-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.02); }
+}
+
+@keyframes view-fade-in {
+  from { opacity: 0; transform: scale(0.99); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-dashboard-enter,
+  .animate-unlock-beam,
+  .animate-lock-exit,
+  .animate-lock-enter,
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
