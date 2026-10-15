@@ -1628,10 +1628,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
   }, []);
 
   return (
-    <div className="flex h-screen w-screen bg-neutral-950 text-white font-sans overflow-hidden select-none relative animate-dashboard-enter">
-      
-      {/* Top Subtle Security Beam on Unlock */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent pointer-events-none z-50 animate-unlock-beam" />
+    <div className="flex h-screen w-screen bg-neutral-950 text-white font-sans overflow-hidden select-none animate-subtle-scale">
       
       {/* ========================================================= */}
       {/* 1. LEFT SIDEBAR: Brand, User, Folder Explorer Tree        */}
