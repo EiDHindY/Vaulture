@@ -559,6 +559,33 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
       }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Jump to search bar when pressing '/' or Ctrl+F / Cmd+F outside of input/textarea
+      if (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f')) {
+        const target = e.target as HTMLElement | null;
+        const isInputElement = target && (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable
+        );
+
+        const hasOpenModal = 
+          !!iconPickerTarget ||
+          isFolderSelectOpen ||
+          !!restoreConfirm ||
+          !!changePasswordModalEntry ||
+          !!renamingFolderId ||
+          !!contextMenu ||
+          !!deleteEntryConfirmId ||
+          !!deleteFolderConfirm;
+
+        if (!isInputElement && !hasOpenModal) {
+          e.preventDefault();
+          searchInputRef.current?.focus();
+          searchInputRef.current?.select();
+          return;
+        }
+      }
+
       if (e.key === 'Escape') {
         if (iconPickerTarget) {
           setIconPickerTarget(null);
@@ -889,11 +916,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
         handleNextMatch();
       }
     } else if (e.key === 'Escape') {
+      e.preventDefault();
       if (searchQuery) {
-        e.preventDefault();
         setSearchQuery('');
         setSearchMatchIndex(0);
       }
+      searchInputRef.current?.blur();
     }
   };
 
@@ -1853,6 +1881,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                 >
                   <X size={13} />
                 </button>
+              </div>
+            )}
+
+            {/* Keyboard shortcut hint when search is empty */}
+            {!searchQuery && (
+              <div className="absolute right-3 flex items-center pointer-events-none">
+                <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-medium text-neutral-400 bg-neutral-800/80 border border-neutral-700/60 rounded shadow-xs">
+                  /
+                </kbd>
               </div>
             )}
           </div>
