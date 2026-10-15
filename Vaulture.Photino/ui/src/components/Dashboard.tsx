@@ -1909,8 +1909,77 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
             )}
           </div>
 
+          {/* New Password CTA */}
+          <div className="p-3 pb-2 shrink-0">
+            <button
+              onClick={handleStartCreate}
+              className="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold shadow-md transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Plus size={16} /> New Password
+            </button>
+          </div>
+
+          {/* File Explorer Folder Hierarchy */}
+          <div className="flex-1 overflow-y-auto px-3 space-y-1 pt-1 min-h-0">
+            
+            {/* Root: All Passwords */}
+            <div
+              onDragOver={(e) => { e.preventDefault(); handleDragOver(e, 'root'); }}
+              onDragLeave={() => handleDragLeave()}
+              onDrop={(e) => handleDrop(e, null)}
+              onClick={() => setActiveFolderId(null)}
+              className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                dropTargetId === 'root'
+                  ? 'bg-emerald-500/30 border-2 border-emerald-400 text-white'
+                  : activeFolderId === null
+                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                  : 'text-neutral-300 hover:bg-neutral-800/60 hover:text-white border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Layers size={16} className={activeFolderId === null ? 'text-emerald-400' : 'text-neutral-400'} />
+                <span>All Passwords</span>
+              </div>
+              <span className="text-[10px] font-mono text-neutral-400 bg-neutral-800/80 px-1.5 py-0.5 rounded-full">
+                {entries.length}
+              </span>
+            </div>
+
+            {/* Folders Header */}
+            <div className="flex items-center justify-between pt-4 pb-1 px-2">
+              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+                Folders
+              </span>
+              <button
+                onClick={() => handleCreateFolder(null)}
+                title="Create Top-Level Folder"
+                className="text-neutral-400 hover:text-emerald-400 p-1 rounded hover:bg-neutral-800 transition-colors cursor-pointer"
+              >
+                <FolderPlus size={14} />
+              </button>
+            </div>
+
+            {/* Folder & Password Tree List (VS Code Explorer style) */}
+            {folderTree.length === 0 && allRootEntries.length === 0 ? (
+              <div
+                onClick={() => handleCreateFolder(null)}
+                className="p-3 text-center border border-dashed border-neutral-800 rounded-xl hover:border-neutral-700 transition-colors cursor-pointer"
+              >
+                <p className="text-xs text-neutral-500">+ Click to create your first folder</p>
+              </div>
+            ) : (
+              <div className="space-y-0.5">
+                {folderTree.map((node) => renderFolderTreeNode(node, 0))}
+                {allRootEntries.map((entry) => renderEntryTreeNode(entry, 0))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Section: Profile & Cloud Sync Card + Lock Vault Button */}
+        <div className="p-3 border-t border-neutral-800 flex flex-col gap-2.5 shrink-0 bg-neutral-900/40">
           {/* User & Cloud Sync Card */}
-          <div className="p-3 m-3 bg-neutral-950/80 border border-neutral-800 rounded-2xl flex flex-col gap-2.5 shrink-0">
+          <div className="p-3 bg-neutral-950/80 border border-neutral-800 rounded-2xl flex flex-col gap-2.5">
             <div className="flex items-center gap-3">
               {user.picture && !avatarError ? (
                 <img
@@ -2086,76 +2155,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
             </div>
           </div>
 
-
-          {/* New Password CTA */}
-          <div className="px-3 pb-2 shrink-0">
-            <button
-              onClick={handleStartCreate}
-              className="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold shadow-md transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Plus size={16} /> New Password
-            </button>
-          </div>
-
-          {/* File Explorer Folder Hierarchy */}
-          <div className="flex-1 overflow-y-auto px-3 space-y-1 pt-1 min-h-0">
-            
-            {/* Root: All Passwords */}
-            <div
-              onDragOver={(e) => { e.preventDefault(); handleDragOver(e, 'root'); }}
-              onDragLeave={() => handleDragLeave()}
-              onDrop={(e) => handleDrop(e, null)}
-              onClick={() => setActiveFolderId(null)}
-              className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                dropTargetId === 'root'
-                  ? 'bg-emerald-500/30 border-2 border-emerald-400 text-white'
-                  : activeFolderId === null
-                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                  : 'text-neutral-300 hover:bg-neutral-800/60 hover:text-white border border-transparent'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Layers size={16} className={activeFolderId === null ? 'text-emerald-400' : 'text-neutral-400'} />
-                <span>All Passwords</span>
-              </div>
-              <span className="text-[10px] font-mono text-neutral-400 bg-neutral-800/80 px-1.5 py-0.5 rounded-full">
-                {entries.length}
-              </span>
-            </div>
-
-            {/* Folders Header */}
-            <div className="flex items-center justify-between pt-4 pb-1 px-2">
-              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
-                Folders
-              </span>
-              <button
-                onClick={() => handleCreateFolder(null)}
-                title="Create Top-Level Folder"
-                className="text-neutral-400 hover:text-emerald-400 p-1 rounded hover:bg-neutral-800 transition-colors cursor-pointer"
-              >
-                <FolderPlus size={14} />
-              </button>
-            </div>
-
-            {/* Folder & Password Tree List (VS Code Explorer style) */}
-            {folderTree.length === 0 && allRootEntries.length === 0 ? (
-              <div
-                onClick={() => handleCreateFolder(null)}
-                className="p-3 text-center border border-dashed border-neutral-800 rounded-xl hover:border-neutral-700 transition-colors cursor-pointer"
-              >
-                <p className="text-xs text-neutral-500">+ Click to create your first folder</p>
-              </div>
-            ) : (
-              <div className="space-y-0.5">
-                {folderTree.map((node) => renderFolderTreeNode(node, 0))}
-                {allRootEntries.map((entry) => renderEntryTreeNode(entry, 0))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Bottom Lock Vault Button */}
-        <div className="p-3 border-t border-neutral-800 shrink-0">
+          {/* Bottom Lock Vault Button */}
           <button
             onClick={onLock}
             className="w-full py-2.5 px-3 bg-red-950/30 hover:bg-red-900/40 border border-red-800/40 text-red-400 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
