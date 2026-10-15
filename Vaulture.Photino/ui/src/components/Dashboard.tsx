@@ -39,6 +39,7 @@ import { IconPickerModal } from './IconPickerModal';
 import { VaultBreadcrumbs, BreadcrumbNode } from './VaultBreadcrumbs';
 import { ParentChildHierarchy } from './ParentChildHierarchy';
 import logoUrl from '../assets/logo.png';
+import { APP_VERSION } from '../version';
 
 interface DashboardProps {
   onLock: () => void;
@@ -1773,7 +1774,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
           {/* Brand */}
           <div className="p-4 border-b border-neutral-800 flex items-center gap-2.5">
             <img src={logoUrl} alt="Vaulture" className="w-8 h-8 object-contain rounded-full" />
-            <span className="font-bold text-lg text-white">Vaulture</span>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-lg text-white">Vaulture</span>
+              <span className="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-neutral-800/80 text-neutral-400 border border-neutral-700/60 leading-none">
+                {APP_VERSION}
+              </span>
+            </div>
           </div>
 
           {/* User & Cloud Sync Card */}

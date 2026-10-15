@@ -15,6 +15,7 @@ import {
   Loader2
 } from 'lucide-react'
 import logoUrl from './assets/logo.png'
+import { APP_VERSION } from './version'
 import { Dashboard } from './components/Dashboard'
 
 const GoogleIcon = () => (
@@ -572,7 +573,12 @@ function App() {
 
         <div className="flex flex-col items-center mb-4">
           <img src={logoUrl} alt="Vaulture Logo" className="w-20 h-20 mb-3 object-contain rounded-full drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]" />
-          <h1 className="text-3xl font-bold tracking-tight text-white">Vaulture</h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-3xl font-bold tracking-tight text-white">Vaulture</h1>
+            <span className="text-xs font-mono font-medium px-2 py-0.5 rounded-md bg-neutral-800 text-neutral-400 border border-neutral-700/60 select-none">
+              {APP_VERSION}
+            </span>
+          </div>
           {mode === 'login' && <p className="text-neutral-400 mt-1 text-sm text-center">Enter your master password</p>}
 
           {/* Linked Account Badge on Lock Screen */}
