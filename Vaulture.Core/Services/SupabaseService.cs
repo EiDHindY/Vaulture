@@ -283,6 +283,105 @@ namespace Vaulture.Core.Services
 
         public record CloudBackupData(byte[] DatabaseBytes, byte[]? RecoveryBytes, string? LastModified);
 
+        public record CloudBackupStatus(
+            bool IsLinked,
+            bool Exists,
+            bool IsUpToDate,
+            string? LastModifiedFormatted,
+            DateTime? LastModifiedUtc,
+            string? ErrorMessage = null
+        );
+
+        public static async Task<CloudBackupStatus> GetBackupStatusAsync(string dbFilePath)
+        {
+            try
+            {
+                var user = Client?.Auth?.CurrentUser ?? new DiskSessionHandler().LoadSession()?.User;
+                if (user == null || string.IsNullOrEmpty(user.Id))
+                {
+                    return new CloudBackupStatus(
+                        IsLinked: false,
+                        Exists: false,
+                        IsUpToDate: false,
+                        LastModifiedFormatted: null,
+                        LastModifiedUtc: null,
+                        ErrorMessage: null
+                    );
+                }
+
+                if (Client == null) await InitializeAsync();
+                if (Client == null)
+                {
+                    return new CloudBackupStatus(
+                        IsLinked: true,
+                        Exists: false,
+                        IsUpToDate: false,
+                        LastModifiedFormatted: null,
+                        LastModifiedUtc: null,
+                        ErrorMessage: "Failed to connect to Supabase."
+                    );
+                }
+
+                var storage = Client.Storage.From("vault-backups");
+                var files = await storage.List(user.Id);
+                var dbMeta = files?.FirstOrDefault(f => f.Name == "vault.db");
+
+                if (dbMeta == null)
+                {
+                    return new CloudBackupStatus(
+                        IsLinked: true,
+                        Exists: false,
+                        IsUpToDate: false,
+                        LastModifiedFormatted: null,
+                        LastModifiedUtc: null,
+                        ErrorMessage: null
+                    );
+                }
+
+                var cloudTime = dbMeta.UpdatedAt ?? dbMeta.CreatedAt;
+                string? formatted = cloudTime?.ToLocalTime().ToString("MMM d, yyyy h:mm tt");
+
+                bool isUpToDate = true;
+                if (File.Exists(dbFilePath) && cloudTime.HasValue)
+                {
+                    var localTime = File.GetLastWriteTimeUtc(dbFilePath);
+                    var walPath = dbFilePath + "-wal";
+                    if (File.Exists(walPath))
+                    {
+                        var walTime = File.GetLastWriteTimeUtc(walPath);
+                        if (walTime > localTime) localTime = walTime;
+                    }
+
+                    // If local was modified more than 5 seconds after the cloud backup was saved, changes are pending
+                    if (localTime > cloudTime.Value.AddSeconds(5))
+                    {
+                        isUpToDate = false;
+                    }
+                }
+
+                return new CloudBackupStatus(
+                    IsLinked: true,
+                    Exists: true,
+                    IsUpToDate: isUpToDate,
+                    LastModifiedFormatted: formatted,
+                    LastModifiedUtc: cloudTime,
+                    ErrorMessage: null
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error checking cloud backup status: {ex.Message}");
+                return new CloudBackupStatus(
+                    IsLinked: IsLinked,
+                    Exists: false,
+                    IsUpToDate: false,
+                    LastModifiedFormatted: null,
+                    LastModifiedUtc: null,
+                    ErrorMessage: ex.Message
+                );
+            }
+        }
+
         public static void SignOut()
         {
             try { Client?.Auth?.SignOut(); } catch { }

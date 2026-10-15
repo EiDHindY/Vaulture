@@ -427,6 +427,31 @@ namespace Vaulture.Photino
                                     }
                                 }
                             }));
+
+                            // Asynchronously query Supabase for real cloud backup status
+                            _ = Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    var backupStatus = await SupabaseService.GetBackupStatusAsync(DbPath);
+                                    w.SendWebMessage(JsonSerializer.Serialize(new {
+                                        type = "BACKUP_STATUS_RESULT",
+                                        payload = new {
+                                            success = string.IsNullOrEmpty(backupStatus.ErrorMessage),
+                                            isLinked = backupStatus.IsLinked,
+                                            exists = backupStatus.Exists,
+                                            isUpToDate = backupStatus.IsUpToDate,
+                                            lastSynced = backupStatus.LastModifiedFormatted,
+                                            lastSyncedIso = backupStatus.LastModifiedUtc?.ToString("o"),
+                                            error = backupStatus.ErrorMessage
+                                        }
+                                    }));
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"Error querying backup status on load: {ex.Message}");
+                                }
+                            });
                         }
                         catch (Exception ex)
                         {
@@ -1136,6 +1161,41 @@ namespace Vaulture.Photino
                             }
                         });
                     }
+                    else if (type == "CHECK_BACKUP_STATUS")
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                var backupStatus = await SupabaseService.GetBackupStatusAsync(DbPath);
+                                w.SendWebMessage(JsonSerializer.Serialize(new {
+                                    type = "BACKUP_STATUS_RESULT",
+                                    payload = new {
+                                        success = string.IsNullOrEmpty(backupStatus.ErrorMessage),
+                                        isLinked = backupStatus.IsLinked,
+                                        exists = backupStatus.Exists,
+                                        isUpToDate = backupStatus.IsUpToDate,
+                                        lastSynced = backupStatus.LastModifiedFormatted,
+                                        lastSyncedIso = backupStatus.LastModifiedUtc?.ToString("o"),
+                                        error = backupStatus.ErrorMessage
+                                    }
+                                }));
+                            }
+                            catch (Exception ex)
+                            {
+                                w.SendWebMessage(JsonSerializer.Serialize(new {
+                                    type = "BACKUP_STATUS_RESULT",
+                                    payload = new {
+                                        success = false,
+                                        isLinked = SupabaseService.IsLinked,
+                                        exists = false,
+                                        isUpToDate = false,
+                                        error = ex.Message
+                                    }
+                                }));
+                            }
+                        });
+                    }
                     else if (type == "SYNC_VAULT")
                     {
                         _ = Task.Run(async () =>
@@ -1152,20 +1212,50 @@ namespace Vaulture.Photino
                                 }
 
                                 bool backedUp = await SupabaseService.UploadBackupAsync(DbPath, RecoveryPath);
+                                if (!backedUp)
+                                {
+                                    w.SendWebMessage(JsonSerializer.Serialize(new {
+                                        type = "SYNC_RESULT",
+                                        payload = new { success = false, error = "Failed to upload encrypted vault backup." }
+                                    }));
+                                    return;
+                                }
+
+                                var backupStatus = await SupabaseService.GetBackupStatusAsync(DbPath);
+                                var formattedTime = backupStatus.LastModifiedFormatted ?? DateTime.Now.ToString("MMM d, yyyy h:mm tt");
+                                var isoTime = (backupStatus.LastModifiedUtc ?? DateTime.UtcNow).ToString("o");
+
                                 w.SendWebMessage(JsonSerializer.Serialize(new {
                                     type = "SYNC_RESULT",
-                                    payload = new { success = backedUp, lastSynced = DateTime.UtcNow.ToString("g") }
+                                    payload = new {
+                                        success = true,
+                                        isLinked = true,
+                                        exists = true,
+                                        isUpToDate = true,
+                                        lastSynced = formattedTime,
+                                        lastSyncedIso = isoTime
+                                    }
                                 }));
 
-                                if (backedUp)
-                                {
-                                    await NotificationService.SendNotificationAsync(
-                                        "Cloud Backup",
-                                        "Your encrypted vault was successfully synced and backed up to your secure cloud storage.",
-                                        "#10b981",
-                                        ""
-                                    );
-                                }
+                                w.SendWebMessage(JsonSerializer.Serialize(new {
+                                    type = "BACKUP_STATUS_RESULT",
+                                    payload = new {
+                                        success = true,
+                                        isLinked = true,
+                                        exists = true,
+                                        isUpToDate = true,
+                                        lastSynced = formattedTime,
+                                        lastSyncedIso = isoTime,
+                                        error = (string?)null
+                                    }
+                                }));
+
+                                await NotificationService.SendNotificationAsync(
+                                    "Cloud Backup",
+                                    "Your encrypted vault was successfully synced and backed up to your secure cloud storage.",
+                                    "#10b981",
+                                    ""
+                                );
                             }
                             catch (Exception ex)
                             {
