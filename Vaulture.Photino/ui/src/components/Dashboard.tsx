@@ -1920,7 +1920,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
           </div>
 
           {/* File Explorer Folder Hierarchy */}
-          <div className="flex-1 overflow-y-auto px-3 space-y-1 pt-1 min-h-0">
+          <div className="flex-1 overflow-y-auto px-3 space-y-1 pt-1 min-h-0 custom-scrollbar">
             
             {/* Root: All Passwords */}
             <div
@@ -1946,7 +1946,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
             </div>
 
             {/* Folders Header */}
-            <div className="flex items-center justify-between pt-4 pb-1 px-2">
+            <div className="flex items-center justify-between pt-3 pb-1 px-2">
               <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
                 Folders
               </span>
@@ -1977,31 +1977,48 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
         </div>
 
         {/* Bottom Section: Profile & Cloud Sync Card + Lock Vault Button */}
-        <div className="p-3 border-t border-neutral-800 flex flex-col gap-2.5 shrink-0 bg-neutral-900/40">
+        <div className="p-2.5 border-t border-neutral-800 flex flex-col gap-2 shrink-0 bg-neutral-900/40">
           {/* User & Cloud Sync Card */}
-          <div className="p-3 bg-neutral-950/80 border border-neutral-800 rounded-2xl flex flex-col gap-2.5">
-            <div className="flex items-center gap-3">
-              {user.picture && !avatarError ? (
-                <img
-                  src={user.picture}
-                  alt={user.name}
-                  referrerPolicy="no-referrer"
-                  onError={() => setAvatarError(true)}
-                  className="w-10 h-10 rounded-full border border-neutral-700 shrink-0 object-cover"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center border border-emerald-500/30 shrink-0">
-                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+          <div className="p-2.5 bg-neutral-950/80 border border-neutral-800 rounded-2xl flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                {user.picture && !avatarError ? (
+                  <img
+                    src={user.picture}
+                    alt={user.name}
+                    referrerPolicy="no-referrer"
+                    onError={() => setAvatarError(true)}
+                    className="w-9 h-9 rounded-full border border-neutral-700 shrink-0 object-cover"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center border border-emerald-500/30 shrink-0 text-xs">
+                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-white truncate">{user.name}</p>
+                  <p className="text-[11px] text-neutral-400 truncate">{user.email || 'Local Vault'}</p>
                 </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white truncate">{user.name}</p>
-                <p className="text-xs text-neutral-400 truncate">{user.email || 'Local Vault'}</p>
               </div>
+
+              {/* Simple Switch / Link Google Account Icon Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSwitchErrorMessage(null);
+                  setSwitchSuccessEmail(null);
+                  setSwitchAuthUrl(null);
+                  setIsSwitchAccountOpen(true);
+                }}
+                className="p-1.5 rounded-lg text-neutral-400 hover:text-emerald-400 hover:bg-neutral-800 border border-neutral-800/80 hover:border-emerald-500/30 transition-all cursor-pointer shrink-0"
+                title={user.isLinked ? "Switch Google Account" : "Link Google Account"}
+              >
+                <ArrowRightLeft size={14} />
+              </button>
             </div>
 
             {/* Real Supabase Cloud Backup Status */}
-            <div className="pt-2.5 border-t border-neutral-800 flex flex-col gap-2">
+            <div className="pt-2 border-t border-neutral-800/80 flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 {/* Status Indicator Dot & Label */}
                 <div className="flex items-center gap-2 min-w-0">
@@ -2054,12 +2071,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
 
                 {/* Status Badge */}
                 {backupStatus.state === 'synced' && !isSyncing && (
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold uppercase tracking-wider">
+                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold uppercase tracking-wider">
                     Up to date
                   </span>
                 )}
                 {backupStatus.state === 'pending' && !isSyncing && (
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold uppercase tracking-wider">
+                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold uppercase tracking-wider">
                     Unsynced
                   </span>
                 )}
@@ -2096,7 +2113,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                   }`}
                 >
                   <RefreshCw
-                    size={14}
+                    size={13}
                     className={isSyncing ? 'animate-spin' : ''}
                   />
                   <span>
@@ -2111,27 +2128,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                 </button>
               )}
 
-              {/* Switch / Link Google Account button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setSwitchErrorMessage(null);
-                  setSwitchSuccessEmail(null);
-                  setSwitchAuthUrl(null);
-                  setIsSwitchAccountOpen(true);
-                }}
-                className="w-full mt-1 py-1.5 px-3 rounded-xl text-xs font-medium text-neutral-400 hover:text-white bg-neutral-900/60 hover:bg-neutral-850 border border-neutral-800 transition-all flex items-center justify-between cursor-pointer group"
-                title={user.isLinked ? "Switch to a different Google account" : "Connect your Google account"}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <ArrowRightLeft size={13} className="text-neutral-500 group-hover:text-emerald-400 shrink-0 transition-colors" />
-                  <span className="truncate">{user.isLinked ? 'Switch Google Account' : 'Link Google Account'}</span>
-                </div>
-                <span className="text-[10px] text-neutral-500 group-hover:text-neutral-300 shrink-0 ml-1.5">
-                  {user.isLinked ? 'Change' : 'Connect'}
-                </span>
-              </button>
-
               {/* Check for Updates button */}
               <button
                 type="button"
@@ -2139,10 +2135,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                   setIsUpdateModalOpen(true);
                   if (!updateInfo) handleCheckForUpdates();
                 }}
-                className="w-full mt-1 py-1.5 px-3 rounded-xl text-xs font-medium text-neutral-400 hover:text-white bg-neutral-900/60 hover:bg-neutral-850 border border-neutral-800 transition-all flex items-center justify-between cursor-pointer group"
+                className="w-full mt-0.5 py-1.5 px-2.5 rounded-xl text-[11px] font-medium text-neutral-400 hover:text-white bg-neutral-900/60 hover:bg-neutral-850 border border-neutral-800/80 transition-all flex items-center justify-between cursor-pointer group"
                 title="Check for software updates"
               >
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-1.5 min-w-0">
                   <ArrowUpCircle size={13} className={updateInfo?.hasUpdate ? "text-emerald-400 shrink-0" : "text-neutral-500 group-hover:text-neutral-300 shrink-0"} />
                   <span className="truncate">{updateInfo?.hasUpdate ? `Update ${updateInfo.latestVersion} available` : 'Check for Updates'}</span>
                 </div>
@@ -2158,9 +2154,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
           {/* Bottom Lock Vault Button */}
           <button
             onClick={onLock}
-            className="w-full py-2.5 px-3 bg-red-950/30 hover:bg-red-900/40 border border-red-800/40 text-red-400 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            className="w-full py-2 px-3 bg-red-950/30 hover:bg-red-900/40 border border-red-800/40 text-red-400 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
-            <Lock size={15} /> Lock Vault
+            <Lock size={14} /> Lock Vault
           </button>
         </div>
       </aside>
