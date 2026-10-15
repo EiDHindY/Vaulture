@@ -104,51 +104,96 @@ namespace Vaulture.Core.Services
                         <title>Vaulture - Authenticated</title>
                         <style>
                             body {
-                                background-color: #1e1e1e;
+                                background-color: #121214;
                                 color: #ffffff;
-                                font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                                font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
                                 display: flex;
                                 flex-direction: column;
                                 align-items: center;
                                 justify-content: center;
                                 height: 100vh;
                                 margin: 0;
+                                user-select: none;
                             }
                             .container {
                                 text-align: center;
-                                background-color: #2d2d2d;
-                                padding: 40px;
-                                border-radius: 12px;
-                                box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-                                max-width: 420px;
+                                background-color: #1e1e24;
+                                padding: 40px 32px;
+                                border-radius: 16px;
+                                box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+                                border: 1px solid #2a2a36;
+                                max-width: 440px;
+                                width: 90%;
+                                box-sizing: border-box;
                             }
                             .success-icon {
-                                color: #2ecc71;
-                                font-size: 48px;
-                                margin-bottom: 16px;
+                                color: #10b981;
+                                font-size: 42px;
+                                margin-bottom: 12px;
                                 font-weight: bold;
+                                line-height: 1;
                             }
-                            h1 { margin: 0 0 10px 0; font-size: 22px; font-weight: 700; }
-                            p { color: #aaaaaa; margin: 0 0 20px 0; font-size: 14px; line-height: 1.5; }
-                            .sub-text { font-size: 13px; color: #9ca3af; margin-top: 14px; }
+                            h1 { margin: 0 0 10px 0; font-size: 22px; font-weight: 700; color: #f3f4f6; }
+                            p { color: #9ca3af; margin: 0 0 20px 0; font-size: 14px; line-height: 1.5; }
+                            .sub-text { font-size: 13px; color: #6b7280; margin-top: 16px; line-height: 1.4; }
                             .close-btn {
-                                display: inline-block;
-                                padding: 10px 28px;
+                                display: inline-flex;
+                                align-items: center;
+                                justify-content: center;
+                                gap: 8px;
+                                width: 100%;
+                                padding: 12px 24px;
                                 background-color: #10b981;
                                 color: #ffffff;
                                 border: none;
-                                border-radius: 8px;
+                                border-radius: 10px;
                                 font-weight: 600;
-                                font-size: 14px;
+                                font-size: 15px;
                                 cursor: pointer;
-                                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-                                transition: background-color 0.2s, transform 0.1s;
+                                box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+                                transition: all 0.2s ease;
+                                box-sizing: border-box;
                             }
                             .close-btn:hover {
                                 background-color: #059669;
+                                box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
                             }
                             .close-btn:active {
                                 transform: scale(0.98);
+                            }
+                            .btn-clicked {
+                                background-color: #272732 !important;
+                                color: #9ca3af !important;
+                                border: 1px solid #3f3f50 !important;
+                                box-shadow: none !important;
+                                cursor: default !important;
+                            }
+                            .hint-box {
+                                display: none;
+                                background: rgba(16, 185, 129, 0.08);
+                                border: 1px solid rgba(16, 185, 129, 0.25);
+                                border-radius: 10px;
+                                padding: 14px;
+                                margin-top: 16px;
+                                font-size: 13px;
+                                line-height: 1.6;
+                                color: #d1fae5;
+                                text-align: center;
+                                animation: fadeIn 0.3s ease;
+                            }
+                            @keyframes fadeIn {
+                                from { opacity: 0; transform: translateY(-4px); }
+                                to { opacity: 1; transform: translateY(0); }
+                            }
+                            kbd {
+                                background: #111116;
+                                border: 1px solid #374151;
+                                border-radius: 4px;
+                                padding: 2px 6px;
+                                font-family: inherit;
+                                font-size: 12px;
+                                color: #f9fafb;
+                                box-shadow: 0 1px 2px rgba(0,0,0,0.4);
                             }
                         </style>
                     </head>
@@ -158,16 +203,43 @@ namespace Vaulture.Core.Services
                             <div class="success-icon">✓</div>
                             <h1>Authentication Successful</h1>
                             <p>You have successfully linked your Google account to Vaulture.</p>
-                            <button class="close-btn" onclick="closeTab();">Close Tab</button>
-                            <div class="sub-text">You can safely close this browser tab and return to the Vaulture app.</div>
+                            <button id="closeBtn" class="close-btn" onclick="handleClose();">
+                                <span>Close Tab</span>
+                            </button>
+                            <div id="hintBox" class="hint-box">
+                                <strong>Return to Vaulture</strong><br>
+                                Browser security prevents tabs opened by other apps from closing automatically.<br>
+                                Press <kbd>Ctrl + W</kbd> (or <kbd>⌘ + W</kbd>) or click the <strong>✕</strong> on this tab.
+                            </div>
+                            <div id="subText" class="sub-text">You can safely close this browser tab and return to the Vaulture app.</div>
                         </div>
                         <script>
-                            function closeTab() {
-                                window.open('', '_self', '');
-                                window.close();
+                            function tryClose() {
+                                try {
+                                    window.open('', '_self', '');
+                                    window.close();
+                                } catch (e) {}
                             }
+
+                            function handleClose() {
+                                tryClose();
+                                const btn = document.getElementById('closeBtn');
+                                const hint = document.getElementById('hintBox');
+                                const sub = document.getElementById('subText');
+                                if (btn) {
+                                    btn.classList.add('btn-clicked');
+                                    btn.innerHTML = '<span>✓ Ready to Close (Ctrl+W)</span>';
+                                }
+                                if (hint) {
+                                    hint.style.display = 'block';
+                                }
+                                if (sub) {
+                                    sub.style.display = 'none';
+                                }
+                            }
+
                             // Attempt to auto-close the tab after 1.5 seconds
-                            setTimeout(closeTab, 1500);
+                            setTimeout(tryClose, 1500);
                         </script>
                     </body>
                     </html>
