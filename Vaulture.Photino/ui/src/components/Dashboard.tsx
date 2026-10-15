@@ -486,12 +486,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
     errorMessage: null,
   });
 
+  // Send IPC message to Photino backend
+  const sendIPC = useCallback((type: string, payload?: any) => {
+    // @ts-ignore
+    if (window.external && window.external.sendMessage) {
+      // @ts-ignore
+      window.external.sendMessage(JSON.stringify({ type, payload }));
+    }
+  }, []);
+
+  const autoSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerAutoSync = useCallback((delayMs: number = 1500) => {
+    if (autoSyncTimeoutRef.current) {
+      clearTimeout(autoSyncTimeoutRef.current);
+    }
+    autoSyncTimeoutRef.current = setTimeout(() => {
+      setUser((currentUser) => {
+        if (currentUser.isLinked) {
+          setIsSyncing(true);
+          sendIPC('SYNC_VAULT');
+        }
+        return currentUser;
+      });
+    }, delayMs);
+  }, [sendIPC]);
+
   const markPendingSync = useCallback(() => {
     setBackupStatus((prev) => {
       if (prev.state === 'unlinked') return prev;
       return { ...prev, state: 'pending' };
     });
-  }, []);
+    triggerAutoSync(1500);
+  }, [triggerAutoSync]);
 
   // Navigation & Hierarchy State
   const [activeFolderId, setActiveFolderId] = useState<number | null>(null); // null means "All Passwords" (root)
@@ -561,14 +588,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
 
   const renameInputRef = useRef<HTMLInputElement>(null);
 
-  // Send IPC message to Photino backend
-  const sendIPC = (type: string, payload?: any) => {
-    // @ts-ignore
-    if (window.external && window.external.sendMessage) {
-      // @ts-ignore
-      window.external.sendMessage(JSON.stringify({ type, payload }));
-    }
-  };
+  // Periodic background check & auto-sync if pending
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (user.isLinked && backupStatus.state === 'pending' && !isSyncing) {
+        setIsSyncing(true);
+        sendIPC('SYNC_VAULT');
+      }
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [user.isLinked, backupStatus.state, isSyncing, sendIPC]);
 
   // Close context menu, custom dropdowns, and panels on Esc or outside click
   useEffect(() => {
@@ -687,20 +716,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
               lastSyncedIso: lastSyncedIso || null,
               errorMessage: error || 'Failed to contact Supabase',
             });
-          } else if (!exists) {
-            setBackupStatus({
-              state: 'not_backed_up',
-              lastSyncedFormatted: null,
-              lastSyncedIso: null,
-              errorMessage: null,
-            });
-          } else if (!isUpToDate) {
+          } else if (!exists || !isUpToDate) {
             setBackupStatus({
               state: 'pending',
               lastSyncedFormatted: remoteTime || null,
               lastSyncedIso: lastSyncedIso || null,
               errorMessage: null,
             });
+            triggerAutoSync(1000);
           } else {
             setBackupStatus({
               state: 'synced',
@@ -1776,45 +1799,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
             </div>
 
             {/* Real Supabase Cloud Backup Status */}
-            <div className="pt-2 border-t border-neutral-800 flex flex-col gap-1">
+            <div className="pt-2.5 border-t border-neutral-800 flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <div
-                  className={`flex items-center gap-1.5 min-w-0 ${backupStatus.state !== 'unlinked' ? 'cursor-pointer hover:opacity-85 transition-opacity' : ''}`}
-                  onClick={() => {
-                    if (!isSyncing && backupStatus.state !== 'unlinked') {
-                      handleTriggerSync();
-                    }
-                  }}
-                  title={
-                    backupStatus.state === 'unlinked'
-                      ? 'Local vault - No Google account linked'
-                      : backupStatus.state === 'pending'
-                      ? 'Changes pending backup - Click to sync with Supabase now'
-                      : backupStatus.state === 'not_backed_up'
-                      ? 'No cloud backup found - Click to create backup in Supabase'
-                      : backupStatus.state === 'error'
-                      ? (backupStatus.errorMessage || 'Supabase unreachable - Click to retry')
-                      : 'Vault is fully backed up and up-to-date in Supabase'
-                  }
-                >
-                  {/* Status Indicator Dot / Icon */}
+                {/* Status Indicator Dot & Label */}
+                <div className="flex items-center gap-2 min-w-0">
                   {isSyncing ? (
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
                   ) : backupStatus.state === 'synced' ? (
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)] shrink-0" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)] shrink-0" />
                   ) : backupStatus.state === 'pending' ? (
-                    <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)] shrink-0" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)] shrink-0" />
                   ) : backupStatus.state === 'not_backed_up' ? (
-                    <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
                   ) : backupStatus.state === 'checking' ? (
-                    <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shrink-0" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shrink-0" />
                   ) : backupStatus.state === 'error' ? (
-                    <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
                   ) : (
-                    <span className="w-2 h-2 rounded-full bg-neutral-600 shrink-0" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-neutral-600 shrink-0" />
                   )}
 
-                  <span className={`text-[11px] font-medium truncate ${
+                  <span className={`text-xs font-semibold truncate ${
                     isSyncing
                       ? 'text-emerald-300'
                       : backupStatus.state === 'synced'
@@ -1830,9 +1835,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                       : 'text-neutral-500'
                   }`}>
                     {isSyncing
-                      ? 'Backing up...'
+                      ? 'Syncing with Cloud...'
                       : backupStatus.state === 'synced'
-                      ? 'Up to Date'
+                      ? 'Cloud Synced'
                       : backupStatus.state === 'pending'
                       ? 'Changes Pending'
                       : backupStatus.state === 'not_backed_up'
@@ -1845,60 +1850,64 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                   </span>
                 </div>
 
-                {/* Interactive Sync / Refresh Button */}
-                <button
-                  onClick={handleTriggerSync}
-                  disabled={isSyncing || backupStatus.state === 'unlinked'}
-                  title={
-                    isSyncing
-                      ? 'Syncing with Supabase...'
-                      : backupStatus.state === 'unlinked'
-                      ? 'Account not linked'
-                      : backupStatus.state === 'pending'
-                      ? 'Sync pending changes to Supabase'
-                      : 'Verify & backup to Supabase now'
-                  }
-                  className={`p-1 rounded transition-colors cursor-pointer ${
-                    backupStatus.state === 'unlinked'
-                      ? 'text-neutral-700 cursor-not-allowed'
-                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
-                  }`}
-                >
-                  <RefreshCw
-                    size={13}
-                    className={isSyncing ? 'animate-spin text-emerald-400' : ''}
-                  />
-                </button>
-              </div>
-
-              {/* Subtitle / Timestamp Information */}
-              <div className="flex items-center justify-between text-[10px] text-neutral-500 px-0.5">
-                <span className="truncate max-w-[145px]" title={backupStatus.errorMessage || backupStatus.lastSyncedFormatted || ''}>
-                  {isSyncing
-                    ? 'Uploading to Supabase...'
-                    : backupStatus.state === 'synced'
-                    ? (backupStatus.lastSyncedFormatted ? `Backup: ${backupStatus.lastSyncedFormatted}` : 'Cloud backup verified')
-                    : backupStatus.state === 'pending'
-                    ? (backupStatus.lastSyncedFormatted ? `Last: ${backupStatus.lastSyncedFormatted}` : 'Unsaved changes')
-                    : backupStatus.state === 'not_backed_up'
-                    ? 'Click to backup now'
-                    : backupStatus.state === 'checking'
-                    ? 'Verifying Supabase...'
-                    : backupStatus.state === 'error'
-                    ? 'Failed to contact Supabase'
-                    : 'Cloud sync inactive'}
-                </span>
+                {/* Status Badge */}
                 {backupStatus.state === 'synced' && !isSyncing && (
-                  <span className="text-emerald-400/90 font-mono text-[9px] shrink-0 font-semibold uppercase tracking-wider">
-                    Synced
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold uppercase tracking-wider">
+                    Up to date
                   </span>
                 )}
                 {backupStatus.state === 'pending' && !isSyncing && (
-                  <span className="text-amber-400/90 font-mono text-[9px] shrink-0 font-semibold uppercase tracking-wider">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold uppercase tracking-wider">
                     Unsynced
                   </span>
                 )}
               </div>
+
+              {/* Subtitle / Timestamp Information */}
+              <div className="text-[10px] text-neutral-400 px-0.5 truncate" title={backupStatus.errorMessage || backupStatus.lastSyncedFormatted || ''}>
+                {isSyncing
+                  ? 'Saving encrypted vault to Supabase...'
+                  : backupStatus.state === 'synced'
+                  ? (backupStatus.lastSyncedFormatted ? `Last backup: ${backupStatus.lastSyncedFormatted}` : 'Cloud backup verified')
+                  : backupStatus.state === 'pending'
+                  ? (backupStatus.lastSyncedFormatted ? `Last backup: ${backupStatus.lastSyncedFormatted}` : 'Local changes waiting to sync')
+                  : backupStatus.state === 'not_backed_up'
+                  ? 'Click below to create initial cloud backup'
+                  : backupStatus.state === 'checking'
+                  ? 'Verifying Supabase storage...'
+                  : backupStatus.state === 'error'
+                  ? (backupStatus.errorMessage || 'Unable to reach cloud storage')
+                  : 'Sign in to Google to enable cloud sync'}
+              </div>
+
+              {/* Prominent Manual Sync Button */}
+              {backupStatus.state !== 'unlinked' && (
+                <button
+                  onClick={handleTriggerSync}
+                  disabled={isSyncing}
+                  className={`w-full mt-0.5 py-1.5 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm ${
+                    isSyncing
+                      ? 'bg-neutral-800 text-emerald-400/80 border border-neutral-700 cursor-not-allowed'
+                      : backupStatus.state === 'pending' || backupStatus.state === 'not_backed_up'
+                      ? 'bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold shadow-amber-500/20 active:scale-[0.98]'
+                      : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white border border-neutral-700 active:scale-[0.98]'
+                  }`}
+                >
+                  <RefreshCw
+                    size={14}
+                    className={isSyncing ? 'animate-spin' : ''}
+                  />
+                  <span>
+                    {isSyncing
+                      ? 'Syncing to Cloud...'
+                      : backupStatus.state === 'pending'
+                      ? 'Sync Changes Now'
+                      : backupStatus.state === 'not_backed_up'
+                      ? 'Backup Vault Now'
+                      : 'Sync Vault Now'}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
 

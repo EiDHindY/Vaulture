@@ -1249,13 +1249,6 @@ namespace Vaulture.Photino
                                         error = (string?)null
                                     }
                                 }));
-
-                                await NotificationService.SendNotificationAsync(
-                                    "Cloud Backup",
-                                    "Your encrypted vault was successfully synced and backed up to your secure cloud storage.",
-                                    "#10b981",
-                                    ""
-                                );
                             }
                             catch (Exception ex)
                             {
