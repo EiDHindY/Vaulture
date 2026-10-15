@@ -1888,12 +1888,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
           <div className="p-4 border-b border-neutral-800 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <img src={logoUrl} alt="Vaulture" className="w-8 h-8 object-contain rounded-full" />
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-lg text-white">Vaulture</span>
-                <span className="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-neutral-800/80 text-neutral-400 border border-neutral-700/60 leading-none">
-                  {APP_VERSION}
-                </span>
-              </div>
+              <span className="font-bold text-lg text-white">Vaulture</span>
             </div>
 
             {updateInfo?.hasUpdate && (
@@ -2099,55 +2094,100 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                   : 'Sign in to Google to enable cloud sync'}
               </div>
 
-              {/* Prominent Manual Sync Button */}
-              {backupStatus.state !== 'unlinked' && (
-                <button
-                  onClick={handleTriggerSync}
-                  disabled={isSyncing}
-                  className={`w-full mt-0.5 py-1.5 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm ${
-                    isSyncing
-                      ? 'bg-neutral-800 text-emerald-400/80 border border-neutral-700 cursor-not-allowed'
-                      : backupStatus.state === 'pending' || backupStatus.state === 'not_backed_up'
-                      ? 'bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold shadow-amber-500/20 active:scale-[0.98]'
-                      : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white border border-neutral-700 active:scale-[0.98]'
-                  }`}
-                >
-                  <RefreshCw
-                    size={13}
-                    className={isSyncing ? 'animate-spin' : ''}
-                  />
-                  <span>
-                    {isSyncing
-                      ? 'Syncing to Cloud...'
-                      : backupStatus.state === 'pending'
-                      ? 'Sync Changes Now'
-                      : backupStatus.state === 'not_backed_up'
-                      ? 'Backup Vault Now'
-                      : 'Sync Vault Now'}
-                  </span>
-                </button>
-              )}
+              {/* Side-by-side Sync and Check for Updates buttons */}
+              <div className="grid grid-cols-2 gap-1.5 mt-0.5">
+                {/* 1. Sync Button with hover tooltip */}
+                <div className="relative group/tooltip">
+                  <button
+                    onClick={handleTriggerSync}
+                    disabled={isSyncing || backupStatus.state === 'unlinked'}
+                    title={
+                      backupStatus.state === 'unlinked'
+                        ? 'Sign in to Google to enable cloud sync'
+                        : isSyncing
+                        ? 'Syncing to Cloud...'
+                        : backupStatus.state === 'pending'
+                        ? 'Sync Changes Now'
+                        : backupStatus.state === 'not_backed_up'
+                        ? 'Backup Vault Now'
+                        : 'Sync Vault Now'
+                    }
+                    className={`w-full py-1.5 px-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm ${
+                      backupStatus.state === 'unlinked'
+                        ? 'bg-neutral-850 text-neutral-500 border border-neutral-800 cursor-not-allowed'
+                        : isSyncing
+                        ? 'bg-neutral-800 text-emerald-400/80 border border-neutral-700 cursor-not-allowed'
+                        : backupStatus.state === 'pending' || backupStatus.state === 'not_backed_up'
+                        ? 'bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold shadow-amber-500/20 active:scale-[0.98]'
+                        : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white border border-neutral-700 active:scale-[0.98]'
+                    }`}
+                  >
+                    <RefreshCw
+                      size={12}
+                      className={`shrink-0 ${isSyncing ? 'animate-spin' : ''}`}
+                    />
+                    <span className="truncate text-[11px]">
+                      {isSyncing
+                        ? 'Syncing...'
+                        : backupStatus.state === 'pending'
+                        ? 'Sync Now'
+                        : backupStatus.state === 'not_backed_up'
+                        ? 'Backup'
+                        : 'Sync'}
+                    </span>
+                  </button>
 
-              {/* Check for Updates button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsUpdateModalOpen(true);
-                  if (!updateInfo) handleCheckForUpdates();
-                }}
-                className="w-full mt-0.5 py-1.5 px-2.5 rounded-xl text-[11px] font-medium text-neutral-400 hover:text-white bg-neutral-900/60 hover:bg-neutral-850 border border-neutral-800/80 transition-all flex items-center justify-between cursor-pointer group"
-                title="Check for software updates"
-              >
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <ArrowUpCircle size={13} className={updateInfo?.hasUpdate ? "text-emerald-400 shrink-0" : "text-neutral-500 group-hover:text-neutral-300 shrink-0"} />
-                  <span className="truncate">{updateInfo?.hasUpdate ? `Update ${updateInfo.latestVersion} available` : 'Check for Updates'}</span>
+                  {/* Floating Hover Tooltip with Whole Text */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1 bg-neutral-900 border border-neutral-700 text-neutral-200 text-[10px] font-medium rounded-lg shadow-2xl opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 flex items-center gap-1">
+                    <span>
+                      {backupStatus.state === 'unlinked'
+                        ? 'Sign in to Google to enable cloud sync'
+                        : isSyncing
+                        ? 'Syncing to Cloud...'
+                        : backupStatus.state === 'pending'
+                        ? 'Sync Changes Now'
+                        : backupStatus.state === 'not_backed_up'
+                        ? 'Backup Vault Now'
+                        : 'Sync Vault Now'}
+                    </span>
+                  </div>
                 </div>
-                {updateInfo?.hasUpdate ? (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0 ml-1.5" />
-                ) : (
-                  <span className="text-[10px] font-mono text-neutral-500 shrink-0 ml-1.5">{APP_VERSION}</span>
-                )}
-              </button>
+
+                {/* 2. Check for Updates Button with hover tooltip */}
+                <div className="relative group/tooltip">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsUpdateModalOpen(true);
+                      if (!updateInfo) handleCheckForUpdates();
+                    }}
+                    title={updateInfo?.hasUpdate ? `Update ${updateInfo.latestVersion} available! Click to install.` : `Check for Updates (v${APP_VERSION})`}
+                    className="w-full py-1.5 px-2 rounded-xl text-[11px] font-medium text-neutral-400 hover:text-white bg-neutral-900/60 hover:bg-neutral-800 border border-neutral-800/80 transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
+                  >
+                    <ArrowUpCircle
+                      size={12}
+                      className={`shrink-0 ${updateInfo?.hasUpdate ? "text-emerald-400" : "text-neutral-500 group-hover:text-neutral-300"}`}
+                    />
+                    <span className="truncate text-[11px]">
+                      {updateInfo?.hasUpdate ? 'Update' : 'Updates'}
+                    </span>
+                    {updateInfo?.hasUpdate ? (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                    ) : (
+                      <span className="text-[10px] font-mono text-neutral-500 shrink-0">v{APP_VERSION}</span>
+                    )}
+                  </button>
+
+                  {/* Floating Hover Tooltip with Whole Text */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1 bg-neutral-900 border border-neutral-700 text-neutral-200 text-[10px] font-medium rounded-lg shadow-2xl opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 flex items-center gap-1">
+                    <span>
+                      {updateInfo?.hasUpdate
+                        ? `Update ${updateInfo.latestVersion} available! Click to install.`
+                        : `Check for Updates (v${APP_VERSION})`}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
