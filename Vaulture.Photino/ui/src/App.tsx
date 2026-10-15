@@ -141,26 +141,17 @@ function App() {
               if (data.payload.success) {
                 setIsUnlocking(false);
                 setIsUnlockedSuccess(true);
-                // Step 1: Hold the unlocked state for 380ms for user feedback
+                // Step 1: Hold the unlocked state for 350ms for user feedback
                 setTimeout(() => {
                   // Step 2: Trigger smooth dissolve/scale exit animation on the lock card
                   setIsTransitioning(true);
                   setTimeout(() => {
-                    // Step 3: Enter dashboard with View Transition if available
-                    const proceed = () => {
-                      setMode('dashboard');
-                      setIsUnlockedSuccess(false);
-                      setIsTransitioning(false);
-                    };
-                    // @ts-ignore
-                    if (document.startViewTransition) {
-                      // @ts-ignore
-                      document.startViewTransition(proceed);
-                    } else {
-                      proceed();
-                    }
-                  }, 300);
-                }, 380);
+                    // Step 3: Enter dashboard smoothly
+                    setMode('dashboard');
+                    setIsUnlockedSuccess(false);
+                    setIsTransitioning(false);
+                  }, 280);
+                }, 350);
               } else {
                 setIsUnlocking(false);
                 setIsUnlockedSuccess(false);
@@ -445,16 +436,7 @@ function App() {
             window.external.sendMessage(JSON.stringify({ type: 'LOCK_VAULT' }));
           }
           setPassword('');
-          const proceed = () => {
-            setMode('login');
-          };
-          // @ts-ignore
-          if (document.startViewTransition) {
-            // @ts-ignore
-            document.startViewTransition(proceed);
-          } else {
-            proceed();
-          }
+          setMode('login');
         }}
         onWipeVault={() => setShowWipeModal(true)}
       />

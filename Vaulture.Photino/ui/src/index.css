@@ -30,14 +30,14 @@ html, body, #root {
 @keyframes unlockBeam {
   0% {
     opacity: 0;
-    transform: translateX(-60%);
+    transform: translateX(-100%);
   }
   30% {
-    opacity: 1;
+    opacity: 0.9;
   }
   100% {
     opacity: 0;
-    transform: translateX(60%);
+    transform: translateX(100%);
   }
 }
 
@@ -66,7 +66,7 @@ html, body, #root {
 }
 
 .animate-dashboard-enter {
-  animation: dashboardEnter 380ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: dashboardEnter 360ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform, opacity;
 }
 
@@ -75,39 +75,19 @@ html, body, #root {
 }
 
 .animate-lock-exit {
-  animation: lockScreenExit 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: lockScreenExit 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   pointer-events: none;
 }
 
 .animate-lock-enter {
-  animation: lockScreenEnter 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Support View Transitions API for seamless cross-fades */
-::view-transition-old(root) {
-  animation: 300ms cubic-bezier(0.16, 1, 0.3, 1) both view-fade-out;
-}
-::view-transition-new(root) {
-  animation: 380ms cubic-bezier(0.16, 1, 0.3, 1) both view-fade-in;
-}
-
-@keyframes view-fade-out {
-  from { opacity: 1; transform: scale(1); }
-  to { opacity: 0; transform: scale(1.02); }
-}
-
-@keyframes view-fade-in {
-  from { opacity: 0; transform: scale(0.99); }
-  to { opacity: 1; transform: scale(1); }
+  animation: lockScreenEnter 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-dashboard-enter,
   .animate-unlock-beam,
   .animate-lock-exit,
-  .animate-lock-enter,
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
+  .animate-lock-enter {
     animation: none !important;
     transform: none !important;
     filter: none !important;
