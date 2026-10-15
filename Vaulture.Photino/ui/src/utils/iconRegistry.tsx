@@ -888,6 +888,16 @@ export const ICON_REGISTRY: IconDefinition[] = [
   },
 ];
 
+export function isCustomUploadedIcon(iconId?: string | null): boolean {
+  if (!iconId) return false;
+  return (
+    iconId.startsWith('data:image/') ||
+    iconId.startsWith('http://') ||
+    iconId.startsWith('https://') ||
+    iconId.startsWith('blob:')
+  );
+}
+
 export function getIconDefinition(id?: string | null): IconDefinition | undefined {
   if (!id) return undefined;
   return ICON_REGISTRY.find(item => item.id.toLowerCase() === id.toLowerCase());
@@ -908,6 +918,18 @@ export const VaultIcon: React.FC<VaultIconProps> = ({
   size = 18,
   className = ''
 }) => {
+  // If it is a custom uploaded image or URL
+  if (isCustomUploadedIcon(iconId)) {
+    return (
+      <img
+        src={iconId!}
+        alt="icon"
+        className={`object-contain rounded shrink-0 select-none pointer-events-none ${className}`}
+        style={{ width: size, height: size, minWidth: size, minHeight: size }}
+      />
+    );
+  }
+
   const custom = getIconDefinition(iconId);
   if (custom) {
     const Comp = custom.component;
@@ -932,3 +954,4 @@ export const VaultIcon: React.FC<VaultIconProps> = ({
 
   return <Key size={size} className={className} />;
 };
+
