@@ -631,7 +631,7 @@ namespace Vaulture.Photino
                                         {
                                             await NotificationService.SendNotificationAsync(
                                                 "Vault Entry Updated",
-                                                $"The item \"{changedTitle}\" ({(string.IsNullOrWhiteSpace(changedUsername) ? "no username" : changedUsername)}) was modified in your local Vaulture workspace.",
+                                                $"The item \"{changedTitle}\" ({(string.IsNullOrWhiteSpace(changedUsername) ? "no username" : changedUsername)}) was modified and its password was updated in your local Vaulture workspace.",
                                                 "#0969da",
                                                 ""
                                             );

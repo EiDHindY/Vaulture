@@ -67,14 +67,25 @@ namespace Vaulture.Core.Services
                     img.ContentDisposition = new ContentDisposition(ContentDisposition.Inline);
                 }
 
+                string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                string deviceName = Environment.MachineName;
+                string userName = Environment.UserName;
+                string osDesc = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
+
                 builder.TextBody = $@"Hi {toName},
 
 Your Google account ({toEmail}) is now connected to your Vaulture desktop workspace.
 
+Action: Google Account Connected
+Time: {timestamp}
+Device: {deviceName}
+System: {osDesc}
+Profile: {userName}
+
 Activity notifications are active for your workspace:
 - Session Started: When your local workspace is unlocked.
 - Unsuccessful Sign-In: If an incorrect key is entered.
-- Item Updated: When an entry in your workspace is modified.
+- Vault Entry Updated: When a saved item is modified.
 - Cloud Backup: When your encrypted vault backup syncs.
 
 Thanks,
@@ -112,6 +123,31 @@ Vaulture Team";
                 <li style=""margin-bottom: 6px;""><strong style=""color: #e4e4e7;"">Vault Entry Updated:</strong> When a saved item is modified.</li>
                 <li><strong style=""color: #e4e4e7;"">Cloud Backup:</strong> When your encrypted vault syncs to cloud storage.</li>
             </ul>
+
+            <div style=""background-color: #141418; border: 1px solid #222226; border-radius: 8px; padding: 12px 14px; margin-top: 16px;"">
+                <table style=""width: 100%; font-size: 12px; color: #71717a; border-collapse: collapse;"">
+                    <tr>
+                        <td style=""padding: 4px 0; width: 65px; font-weight: 600; color: #71717a;"">Action</td>
+                        <td style=""padding: 4px 0; color: #f4f4f5; font-weight: 600;"">Google Account Connected</td>
+                    </tr>
+                    <tr>
+                        <td style=""padding: 4px 0; font-weight: 600; color: #71717a;"">Time</td>
+                        <td style=""padding: 4px 0; color: #e4e4e7; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;"">{timestamp}</td>
+                    </tr>
+                    <tr>
+                        <td style=""padding: 4px 0; font-weight: 600; color: #71717a;"">Device</td>
+                        <td style=""padding: 4px 0; color: #e4e4e7;"">{deviceName}</td>
+                    </tr>
+                    <tr>
+                        <td style=""padding: 4px 0; font-weight: 600; color: #71717a;"">System</td>
+                        <td style=""padding: 4px 0; color: #e4e4e7;"">{osDesc}</td>
+                    </tr>
+                    <tr>
+                        <td style=""padding: 4px 0; font-weight: 600; color: #71717a;"">Profile</td>
+                        <td style=""padding: 4px 0; color: #e4e4e7;"">{userName}</td>
+                    </tr>
+                </table>
+            </div>
         </div>
 
         <div style=""border-top: 1px solid #27272a; margin-top: 28px; padding-top: 18px; text-align: center; font-size: 12px; color: #71717a; line-height: 1.5;"">
