@@ -8,6 +8,7 @@ using Vaulture.Core.Models;
 using Vaulture.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.Sqlite;
+using Vaulture.Photino.Services;
 
 namespace Vaulture.Photino
 {
@@ -1408,8 +1409,107 @@ namespace Vaulture.Photino
                             }
                         });
                     }
+                    else if (type == "CHECK_UPDATE")
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                string currentVer = "v1.1.5";
+                                if (data.TryGetProperty("payload", out var pProp) &&
+                                    pProp.TryGetProperty("currentVersion", out var cvProp) &&
+                                    cvProp.ValueKind == JsonValueKind.String)
+                                {
+                                    string? cv = cvProp.GetString();
+                                    if (!string.IsNullOrWhiteSpace(cv)) currentVer = cv;
+                                }
+
+                                var result = await UpdateService.CheckForUpdatesAsync(currentVer);
+                                w.SendWebMessage(JsonSerializer.Serialize(new
+                                {
+                                    type = "CHECK_UPDATE_RESULT",
+                                    payload = result
+                                }));
+                            }
+                            catch (Exception ex)
+                            {
+                                w.SendWebMessage(JsonSerializer.Serialize(new
+                                {
+                                    type = "CHECK_UPDATE_RESULT",
+                                    payload = new { success = false, error = ex.Message }
+                                }));
+                            }
+                        });
+                    }
+                    else if (type == "DOWNLOAD_UPDATE")
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                var payload = data.GetProperty("payload");
+                                string downloadUrl = payload.GetProperty("downloadUrl").GetString() ?? "";
+
+                                if (string.IsNullOrEmpty(downloadUrl))
+                                {
+                                    throw new ArgumentException("Download URL cannot be empty.");
+                                }
+
+                                int lastReportedPercent = -1;
+                                bool success = await UpdateService.DownloadAndStageUpdateAsync(downloadUrl, (percent, bytesRead, totalBytes) =>
+                                {
+                                    if (percent != lastReportedPercent)
+                                    {
+                                        lastReportedPercent = percent;
+                                        w.SendWebMessage(JsonSerializer.Serialize(new
+                                        {
+                                            type = "UPDATE_DOWNLOAD_PROGRESS",
+                                            payload = new
+                                            {
+                                                percent = percent,
+                                                bytesRead = bytesRead,
+                                                totalBytes = totalBytes
+                                            }
+                                        }));
+                                    }
+                                });
+
+                                w.SendWebMessage(JsonSerializer.Serialize(new
+                                {
+                                    type = "UPDATE_DOWNLOAD_COMPLETE",
+                                    payload = new { success = success }
+                                }));
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Update download failed: {ex.Message}");
+                                w.SendWebMessage(JsonSerializer.Serialize(new
+                                {
+                                    type = "UPDATE_DOWNLOAD_ERROR",
+                                    payload = new { success = false, error = ex.Message }
+                                }));
+                            }
+                        });
+                    }
+                    else if (type == "APPLY_UPDATE_AND_RESTART")
+                    {
+                        try
+                        {
+                            UpdateService.ApplyUpdateAndRestart();
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Apply update failed: {ex.Message}");
+                            w.SendWebMessage(JsonSerializer.Serialize(new
+                            {
+                                type = "UPDATE_DOWNLOAD_ERROR",
+                                payload = new { success = false, error = ex.Message }
+                            }));
+                        }
+                    }
                 }
                 catch (Exception ex)
+
                 {
                     Console.WriteLine("Error parsing message: " + ex.Message);
                 }

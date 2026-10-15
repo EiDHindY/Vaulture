@@ -25,7 +25,8 @@ import {
   History,
   RotateCcw,
   KeyRound,
-  CornerDownRight
+  CornerDownRight,
+  ArrowUpCircle
 } from 'lucide-react';
 import { VaultEntry, VaultFolder, UserProfile } from '../types';
 import {
@@ -36,6 +37,7 @@ import {
 } from '../utils/security';
 import { VaultIcon } from '../utils/iconRegistry';
 import { IconPickerModal } from './IconPickerModal';
+import { UpdateModal, UpdateInfo } from './UpdateModal';
 import { VaultBreadcrumbs, BreadcrumbNode } from './VaultBreadcrumbs';
 import { ParentChildHierarchy } from './ParentChildHierarchy';
 import logoUrl from '../assets/logo.png';
@@ -589,6 +591,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
 
   const renameInputRef = useRef<HTMLInputElement>(null);
 
+  // In-App Software Update State
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [updateDownloadState, setUpdateDownloadState] = useState<'idle' | 'downloading' | 'ready' | 'error'>('idle');
+  const [updateDownloadProgress, setUpdateDownloadProgress] = useState(0);
+  const [updateErrorMessage, setUpdateErrorMessage] = useState<string | null>(null);
+
   // Periodic background check & auto-sync if pending
   useEffect(() => {
     const interval = setInterval(() => {
@@ -682,6 +692,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
   useEffect(() => {
     sendIPC('GET_DATA');
     sendIPC('CHECK_BACKUP_STATUS');
+    sendIPC('CHECK_UPDATE', { currentVersion: APP_VERSION });
 
     const handleWebMessage = (message: string) => {
       try {
@@ -841,7 +852,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
               errorMessage: data.payload.error || 'Failed to sync with Supabase',
             }));
           }
+        } else if (data.type === 'CHECK_UPDATE_RESULT') {
+          setIsCheckingUpdate(false);
+          if (data.payload?.success) {
+            setUpdateInfo(data.payload);
+            if (data.payload.hasUpdate) {
+              setUpdateDownloadState('idle');
+            }
+          } else if (data.payload?.error) {
+            setUpdateErrorMessage(data.payload.error);
+          }
+        } else if (data.type === 'UPDATE_DOWNLOAD_PROGRESS') {
+          setUpdateDownloadState('downloading');
+          setUpdateDownloadProgress(data.payload?.percent || 0);
+        } else if (data.type === 'UPDATE_DOWNLOAD_COMPLETE') {
+          if (data.payload?.success) {
+            setUpdateDownloadState('ready');
+            setUpdateDownloadProgress(100);
+          } else {
+            setUpdateDownloadState('error');
+            setUpdateErrorMessage(data.payload?.error || 'Failed to extract and prepare update.');
+          }
+        } else if (data.type === 'UPDATE_DOWNLOAD_ERROR') {
+          setUpdateDownloadState('error');
+          setUpdateErrorMessage(data.payload?.error || 'Failed to download update.');
         }
+
       } catch (err) {
         console.error('IPC Message error:', err);
       }
@@ -1428,6 +1464,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
     setIconPickerTarget(null);
   };
 
+  // In-App Software Update Handlers
+  const handleCheckForUpdates = () => {
+    setIsCheckingUpdate(true);
+    setUpdateErrorMessage(null);
+    sendIPC('CHECK_UPDATE', { currentVersion: APP_VERSION });
+  };
+
+  const handleStartUpdateDownload = () => {
+    if (!updateInfo?.downloadUrl) return;
+    setUpdateDownloadState('downloading');
+    setUpdateDownloadProgress(0);
+    setUpdateErrorMessage(null);
+    sendIPC('DOWNLOAD_UPDATE', { downloadUrl: updateInfo.downloadUrl });
+  };
+
+  const handleApplyUpdateAndRestart = () => {
+    sendIPC('APPLY_UPDATE_AND_RESTART', {});
+  };
+
   // Start new password form (preset folder to active folder!)
   const handleStartCreate = () => {
     setFormData({
@@ -1772,14 +1827,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
         
         <div className="flex flex-col flex-1 min-h-0">
           {/* Brand */}
-          <div className="p-4 border-b border-neutral-800 flex items-center gap-2.5">
-            <img src={logoUrl} alt="Vaulture" className="w-8 h-8 object-contain rounded-full" />
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-lg text-white">Vaulture</span>
-              <span className="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-neutral-800/80 text-neutral-400 border border-neutral-700/60 leading-none">
-                {APP_VERSION}
-              </span>
+          <div className="p-4 border-b border-neutral-800 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <img src={logoUrl} alt="Vaulture" className="w-8 h-8 object-contain rounded-full" />
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-lg text-white">Vaulture</span>
+                <span className="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-neutral-800/80 text-neutral-400 border border-neutral-700/60 leading-none">
+                  {APP_VERSION}
+                </span>
+              </div>
             </div>
+
+            {updateInfo?.hasUpdate && (
+              <button
+                type="button"
+                onClick={() => setIsUpdateModalOpen(true)}
+                className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-400 text-[10px] font-semibold rounded-lg transition-all animate-pulse cursor-pointer shadow-sm shadow-emerald-950/40"
+                title={`Update ${updateInfo.latestVersion} available! Click to install.`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span>Update</span>
+              </button>
+            )}
           </div>
 
           {/* User & Cloud Sync Card */}
@@ -1914,8 +1983,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                   </span>
                 </button>
               )}
+
+              {/* Check for Updates button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsUpdateModalOpen(true);
+                  if (!updateInfo) handleCheckForUpdates();
+                }}
+                className="w-full mt-1 py-1.5 px-3 rounded-xl text-xs font-medium text-neutral-400 hover:text-white bg-neutral-900/60 hover:bg-neutral-850 border border-neutral-800 transition-all flex items-center justify-between cursor-pointer group"
+                title="Check for software updates"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <ArrowUpCircle size={13} className={updateInfo?.hasUpdate ? "text-emerald-400 shrink-0" : "text-neutral-500 group-hover:text-neutral-300 shrink-0"} />
+                  <span className="truncate">{updateInfo?.hasUpdate ? `Update ${updateInfo.latestVersion} available` : 'Check for Updates'}</span>
+                </div>
+                {updateInfo?.hasUpdate ? (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0 ml-1.5" />
+                ) : (
+                  <span className="text-[10px] font-mono text-neutral-500 shrink-0 ml-1.5">{APP_VERSION}</span>
+                )}
+              </button>
             </div>
           </div>
+
 
           {/* New Password CTA */}
           <div className="px-3 pb-2 shrink-0">
@@ -3119,6 +3210,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
           onClose={() => setIconPickerTarget(null)}
         />
       )}
+
+      {/* In-App Software Update Modal */}
+      <UpdateModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        currentVersion={APP_VERSION}
+        updateInfo={updateInfo}
+        isChecking={isCheckingUpdate}
+        downloadState={updateDownloadState}
+        downloadProgress={updateDownloadProgress}
+        errorMessage={updateErrorMessage}
+        onCheckUpdate={handleCheckForUpdates}
+        onStartDownload={handleStartUpdateDownload}
+        onApplyAndRestart={handleApplyUpdateAndRestart}
+      />
     </div>
   );
 };
+
