@@ -77,10 +77,6 @@ namespace Vaulture.Photino
             if (!File.Exists(iconPath)) iconPath = Path.Combine(AppContext.BaseDirectory, fallbackIcon);
             if (!File.Exists(iconPath)) iconPath = Path.Combine(Directory.GetCurrentDirectory(), preferredIcon);
             if (!File.Exists(iconPath)) iconPath = Path.Combine(Directory.GetCurrentDirectory(), fallbackIcon);
-            if (OperatingSystem.IsLinux() && File.Exists(iconPath))
-            {
-                EnsureLinuxDesktopIntegration(iconPath);
-            }
 
             var window = new PhotinoWindow()
                 .SetTitle(windowTitle)
@@ -1432,70 +1428,6 @@ namespace Vaulture.Photino
             });
 
             window.WaitForClose();
-        }
-
-        private static void EnsureLinuxDesktopIntegration(string iconPath)
-        {
-            try
-            {
-                string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                string appsDir = Path.Combine(home, ".local", "share", "applications");
-                string iconsDir = Path.Combine(home, ".local", "share", "icons", "hicolor", "256x256", "apps");
-
-                Directory.CreateDirectory(appsDir);
-                Directory.CreateDirectory(iconsDir);
-
-                // Install 256x256 icon
-                string targetIcon = Path.Combine(iconsDir, "vaulture.png");
-                string targetIconUpper = Path.Combine(iconsDir, "Vaulture.png");
-                if (File.Exists(iconPath))
-                {
-                    if (!File.Exists(targetIcon) || new FileInfo(targetIcon).Length != new FileInfo(iconPath).Length)
-                    {
-                        File.Copy(iconPath, targetIcon, true);
-                        File.Copy(iconPath, targetIconUpper, true);
-                    }
-                }
-
-                // Install .desktop files for both cases to match Wayland app_id and X11 WM_CLASS
-                string exePath = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "Vaulture");
-                string desktopContent = $"""
-                [Desktop Entry]
-                Name=Vaulture
-                Comment=Personal Encrypted Vault
-                Exec="{exePath}"
-                Icon=vaulture
-                Terminal=false
-                Type=Application
-                Categories=Utility;Security;
-                StartupWMClass=Vaulture
-                """;
-
-                string[] desktopFiles = [
-                    Path.Combine(appsDir, "Vaulture.desktop"),
-                    Path.Combine(appsDir, "vaulture.desktop")
-                ];
-
-                bool updated = false;
-                foreach (var file in desktopFiles)
-                {
-                    if (!File.Exists(file) || File.ReadAllText(file) != desktopContent)
-                    {
-                        File.WriteAllText(file, desktopContent);
-                        updated = true;
-                    }
-                }
-
-                if (updated)
-                {
-                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("kbuildsycoca6", "--noincremental") { CreateNoWindow = true })?.WaitForExit(1000); } catch { }
-                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("update-desktop-database", appsDir) { CreateNoWindow = true })?.WaitForExit(1000); } catch { }
-                }
-            }
-            catch
-            {
-                // Non-critical background integration
-            }
         }
 
         internal static class GlibNative
