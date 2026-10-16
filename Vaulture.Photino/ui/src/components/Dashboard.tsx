@@ -863,13 +863,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
           }
         } else if (data.type === 'CHECK_UPDATE_RESULT') {
           setIsCheckingUpdate(false);
-          if (data.payload?.success) {
-            setUpdateInfo(data.payload);
-            if (data.payload.hasUpdate) {
+          const raw = data.payload || {};
+          const isSuccess = raw.success ?? raw.Success;
+          const hasUpdate = raw.hasUpdate ?? raw.HasUpdate;
+          if (isSuccess) {
+            const normalizedInfo: UpdateInfo = {
+              hasUpdate: !!hasUpdate,
+              currentVersion: raw.currentVersion ?? raw.CurrentVersion ?? APP_VERSION,
+              latestVersion: raw.latestVersion ?? raw.LatestVersion ?? '',
+              releaseName: raw.releaseName ?? raw.ReleaseName ?? '',
+              releaseNotes: raw.releaseNotes ?? raw.ReleaseNotes ?? '',
+              publishedAt: raw.publishedAt ?? raw.PublishedAt ?? '',
+              downloadUrl: raw.downloadUrl ?? raw.DownloadUrl ?? '',
+              assetSize: raw.assetSize ?? raw.AssetSize ?? 0,
+            };
+            setUpdateInfo(normalizedInfo);
+            if (hasUpdate) {
               setUpdateDownloadState('idle');
             }
-          } else if (data.payload?.error) {
-            setUpdateErrorMessage(data.payload.error);
+          } else if (raw.error || raw.Error) {
+            setUpdateErrorMessage(raw.error || raw.Error);
           }
         } else if (data.type === 'UPDATE_DOWNLOAD_PROGRESS') {
           setUpdateDownloadState('downloading');
@@ -2067,7 +2080,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                 {/* Status Badge */}
                 {backupStatus.state === 'synced' && !isSyncing && (
                   <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold uppercase tracking-wider">
-                    Up to date
+                    Synced
                   </span>
                 )}
                 {backupStatus.state === 'pending' && !isSyncing && (

@@ -1479,7 +1479,7 @@ namespace Vaulture.Photino
                         {
                             try
                             {
-                                string currentVer = "v1.1.5";
+                                string currentVer = "v1.1.7";
                                 if (data.TryGetProperty("payload", out var pProp) &&
                                     pProp.TryGetProperty("currentVersion", out var cvProp) &&
                                     cvProp.ValueKind == JsonValueKind.String)
@@ -1492,7 +1492,19 @@ namespace Vaulture.Photino
                                 w.SendWebMessage(JsonSerializer.Serialize(new
                                 {
                                     type = "CHECK_UPDATE_RESULT",
-                                    payload = result
+                                    payload = new
+                                    {
+                                        success = result.Success,
+                                        hasUpdate = result.HasUpdate,
+                                        currentVersion = result.CurrentVersion,
+                                        latestVersion = result.LatestVersion,
+                                        releaseName = result.ReleaseName,
+                                        releaseNotes = result.ReleaseNotes,
+                                        publishedAt = result.PublishedAt,
+                                        downloadUrl = result.DownloadUrl,
+                                        assetSize = result.AssetSize,
+                                        error = result.Error
+                                    }
                                 }));
                             }
                             catch (Exception ex)
