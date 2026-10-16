@@ -563,6 +563,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
     folderId: null,
   });
 
+  // Validation: Title, Username/Email, and Password are all mandatory
+  const isFormValid = Boolean(
+    formData.title.trim() &&
+    formData.username.trim() &&
+    formData.password.trim()
+  );
+
   // Custom Icon Picker Modal State
   const [iconPickerTarget, setIconPickerTarget] = useState<{
     type: 'entry' | 'folder';
@@ -1589,7 +1596,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
   // Save form
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim()) return;
+    if (!formData.title.trim() || !formData.username.trim() || !formData.password.trim()) {
+      return;
+    }
 
     sendIPC('SAVE_ENTRY', {
       id: formData.id,
@@ -2518,7 +2527,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-xl shadow-md transition-colors cursor-pointer"
+                    disabled={!isFormValid}
+                    className={`px-4 py-1.5 text-xs font-semibold rounded-xl shadow-md transition-all ${
+                      isFormValid
+                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer active:scale-[0.98]'
+                        : 'bg-neutral-800 text-neutral-500 border border-neutral-700/60 cursor-not-allowed opacity-60'
+                    }`}
+                    title={!isFormValid ? "Title, Username / Email, and Password are all required" : "Save Password"}
                   >
                     Save Password
                   </button>
@@ -2675,10 +2690,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                 {/* Username */}
                 <div>
                   <label className="block font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">
-                    Username / Email
+                    Username / Email *
                   </label>
                   <input
                     type="text"
+                    required
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                     placeholder="e.g. user@gmail.com"
@@ -2690,7 +2706,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block font-semibold text-neutral-400 uppercase tracking-wider">
-                      Password
+                      Password *
                     </label>
                     <button
                       type="button"
@@ -2714,6 +2730,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
+                      required
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       placeholder="Enter password..."

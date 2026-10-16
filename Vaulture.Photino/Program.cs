@@ -544,6 +544,19 @@ namespace Vaulture.Photino
                                 icon = (iconProp.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(iconProp.GetString())) ? iconProp.GetString() : null;
                             }
 
+                            if (string.IsNullOrWhiteSpace(title))
+                            {
+                                throw new ArgumentException("Title is required.");
+                            }
+                            if (string.IsNullOrWhiteSpace(username))
+                            {
+                                throw new ArgumentException("Username / Email is required.");
+                            }
+                            if (string.IsNullOrWhiteSpace(password))
+                            {
+                                throw new ArgumentException("Password is required.");
+                            }
+
                             Entry? entry = null;
                             if (id > 0)
                             {
