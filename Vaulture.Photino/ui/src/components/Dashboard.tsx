@@ -2202,7 +2202,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                       setIsUpdateModalOpen(true);
                       if (!updateInfo) handleCheckForUpdates();
                     }}
-                    title={updateInfo?.hasUpdate ? `Update ${updateInfo.latestVersion} available! Click to install.` : `Check for Updates (v${APP_VERSION})`}
+                    title={
+                      updateInfo?.hasUpdate
+                        ? `Update ${updateInfo.latestVersion} available! Click to install.`
+                        : `Check for Updates (${APP_VERSION})`
+                    }
                     className={`w-full py-1.5 px-2 rounded-xl text-[11px] transition-all flex items-center justify-center gap-1.5 cursor-pointer group ${
                       updateInfo?.hasUpdate
                         ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 font-semibold shadow-sm shadow-emerald-950/40'
@@ -2213,13 +2217,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                       size={12}
                       className={`shrink-0 ${updateInfo?.hasUpdate ? "text-emerald-400" : "text-neutral-500 group-hover:text-neutral-300"}`}
                     />
-                    <span className="truncate text-[11px]">
-                      {updateInfo?.hasUpdate ? 'Update' : 'Updates'}
-                    </span>
                     {updateInfo?.hasUpdate ? (
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                      <>
+                        <span className="truncate text-[11px] font-semibold text-emerald-400">Update</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                      </>
                     ) : (
-                      <span className="text-[10px] font-mono text-neutral-500 shrink-0">v{APP_VERSION}</span>
+                      <span className="text-[11px] font-mono text-neutral-400 group-hover:text-neutral-200 truncate">
+                        {APP_VERSION}
+                      </span>
                     )}
                   </button>
 
@@ -2228,7 +2234,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                     <span>
                       {updateInfo?.hasUpdate
                         ? `Update ${updateInfo.latestVersion} available! Click to install.`
-                        : `Check for Updates (v${APP_VERSION})`}
+                        : `Check for Updates (${APP_VERSION})`}
                     </span>
                   </div>
                 </div>
