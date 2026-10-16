@@ -607,6 +607,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
   const [updateDownloadState, setUpdateDownloadState] = useState<'idle' | 'downloading' | 'ready' | 'error'>('idle');
   const [updateDownloadProgress, setUpdateDownloadProgress] = useState(0);
   const [updateErrorMessage, setUpdateErrorMessage] = useState<string | null>(null);
+  const [dismissedUpdateVersion, setDismissedUpdateVersion] = useState<string | null>(null);
+
+  // Automatic silent background update check on startup & periodic re-check
+  useEffect(() => {
+    // Check silently 1.5 seconds after launch to keep startup instantaneous
+    const initialCheckTimer = setTimeout(() => {
+      sendIPC('CHECK_UPDATE', { currentVersion: APP_VERSION });
+    }, 1500);
+
+    // Periodic check every 30 minutes in background
+    const interval = setInterval(() => {
+      sendIPC('CHECK_UPDATE', { currentVersion: APP_VERSION });
+    }, 30 * 60 * 1000);
+
+    return () => {
+      clearTimeout(initialCheckTimer);
+      clearInterval(interval);
+    };
+  }, [sendIPC]);
 
   // Google Account Switch / Link State
   const [isSwitchAccountOpen, setIsSwitchAccountOpen] = useState(false);
@@ -2184,7 +2203,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
                       if (!updateInfo) handleCheckForUpdates();
                     }}
                     title={updateInfo?.hasUpdate ? `Update ${updateInfo.latestVersion} available! Click to install.` : `Check for Updates (v${APP_VERSION})`}
-                    className="w-full py-1.5 px-2 rounded-xl text-[11px] font-medium text-neutral-400 hover:text-white bg-neutral-900/60 hover:bg-neutral-800 border border-neutral-800/80 transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
+                    className={`w-full py-1.5 px-2 rounded-xl text-[11px] transition-all flex items-center justify-center gap-1.5 cursor-pointer group ${
+                      updateInfo?.hasUpdate
+                        ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 font-semibold shadow-sm shadow-emerald-950/40'
+                        : 'font-medium text-neutral-400 hover:text-white bg-neutral-900/60 hover:bg-neutral-800 border border-neutral-800/80'
+                    }`}
                   >
                     <ArrowUpCircle
                       size={12}
@@ -2324,6 +2347,40 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLock }) => {
             )}
           </div>
         </div>
+
+        {/* Automatic In-App Update Notification Banner */}
+        {updateInfo?.hasUpdate && dismissedUpdateVersion !== updateInfo.latestVersion && (
+          <div className="mx-4 mt-2.5 px-3.5 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between gap-3 text-xs shadow-lg shadow-emerald-950/20 animate-in fade-in slide-in-from-top-1 shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="font-semibold text-emerald-300">
+                  Update Available: {updateInfo.releaseName || `Vaulture ${updateInfo.latestVersion}`}
+                </span>
+                <span className="text-neutral-400 hidden sm:inline truncate">
+                  — A new version is ready to install.
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsUpdateModalOpen(true)}
+                className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold rounded-lg text-[11px] transition-colors cursor-pointer shadow-sm"
+              >
+                Install Update
+              </button>
+              <button
+                type="button"
+                onClick={() => setDismissedUpdateVersion(updateInfo.latestVersion)}
+                className="p-1 text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer rounded-md hover:bg-neutral-800"
+                title="Dismiss banner"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Content Area: Parent & Children Hierarchy + Passwords */}
         <div

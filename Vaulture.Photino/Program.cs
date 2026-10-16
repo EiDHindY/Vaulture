@@ -1492,7 +1492,7 @@ namespace Vaulture.Photino
                         {
                             try
                             {
-                                string currentVer = "v1.1.7";
+                                string currentVer = "v1.1.9";
                                 if (data.TryGetProperty("payload", out var pProp) &&
                                     pProp.TryGetProperty("currentVersion", out var cvProp) &&
                                     cvProp.ValueKind == JsonValueKind.String)
